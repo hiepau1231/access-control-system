@@ -6,11 +6,16 @@ import { decrypt } from '../utils/encryption';
 export class UserController {
   static async getAllUsers(req: Request, res: Response) {
     try {
-      const users = await UserModel.getAll();
-      res.json(users.map(user => ({ ...user, password: undefined })));
+      const { users, total } = await UserModel.getAll(page, limit, search);
+      res.json({
+        users: users.map(user => ({ ...user, password: undefined })),
+        total,
+        page,
+        limit
+      });
     } catch (error) {
       console.error('Error getting all users:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: 'Internal server error', error: error.message });
     }
   }
 
@@ -23,7 +28,7 @@ export class UserController {
       res.json({ ...user, password: undefined });
     } catch (error) {
       console.error('Error getting user by id:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: 'Internal server error', error: error.message });
     }
   }
 
@@ -40,7 +45,11 @@ export class UserController {
       res.json({ message: 'User updated successfully' });
     } catch (error) {
       console.error('Error updating user:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      if (error.message.includes('UNIQUE constraint failed')) {
+        res.status(400).json({ message: 'Username or email already exists' });
+      } else {
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+      }
     }
   }
 
@@ -50,7 +59,7 @@ export class UserController {
       res.json({ message: 'User deleted successfully' });
     } catch (error) {
       console.error('Error deleting user:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: 'Internal server error', error: error.message });
     }
   }
 }

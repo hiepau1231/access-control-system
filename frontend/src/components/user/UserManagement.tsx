@@ -1,40 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Space, Button, Modal, Form, Input, Select, message } from 'antd';
 import { getUsers, updateUser, deleteUser, getRoles } from '../../services/api';
 
 const { Option } = Select;
+const { Search } = Input;
 
-const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState([]);
+const UserManagement: React.FC = React.memo(() => {
+  const [users, setUsers] = useState<any[]>([]);
   const [roles, setRoles] = useState<Array<{ id: string, name: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [searchText, setSearchText] = useState('');
 
-  useEffect(() => {
-    fetchUsers();
-    fetchRoles();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const response = await getUsers();
-      setUsers(response.data);
+      setUsers(Array.isArray(response.data) ? response.data : []);
+      setPagination(prev => ({ ...prev, total: Array.isArray(response.data) ? response.data.length : 0 }));
     } catch (error) {
-      message.error('Failed to fetch users');
+      message.error('Không thể tải danh sách người dùng. Vui lòng thử lại sau.');
+      console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const memoizedFetchUsers = useCallback(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    memoizedFetchUsers();
+    fetchRoles();
+  }, [memoizedFetchUsers]);
 
   const fetchRoles = async () => {
     try {
       const response = await getRoles();
       setRoles(response.data);
     } catch (error) {
-      message.error('Failed to fetch roles');
+      message.error('Không thể tải danh sách vai trò. Vui lòng thử lại sau.');
+      console.error('Error fetching roles:', error);
     }
   };
 
@@ -47,10 +57,11 @@ const UserManagement: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteUser(id);
-      message.success('User deleted successfully');
+      message.success('Xóa người dùng thành công');
       fetchUsers();
     } catch (error) {
-      message.error('Failed to delete user');
+      message.error('Không thể xóa người dùng. Vui lòng thử lại sau.');
+      console.error('Error deleting user:', error);
     }
   };
 
@@ -59,13 +70,18 @@ const UserManagement: React.FC = () => {
       const values = await form.validateFields();
       if (editingUserId) {
         await updateUser(editingUserId, values);
-        message.success('User updated successfully');
+        message.success('Cập nhật người dùng thành công');
       }
       setModalVisible(false);
       form.resetFields();
       fetchUsers();
     } catch (error) {
-      message.error('Failed to update user');
+      if (error instanceof Error) {
+        message.error(`Không thể cập nhật người dùng: ${error.message}`);
+      } else {
+        message.error('Không thể cập nhật người dùng. Vui lòng thử lại sau.');
+      }
+      console.error('Error updating user:', error);
     }
   };
 
@@ -103,9 +119,30 @@ const UserManagement: React.FC = () => {
     },
   ];
 
+  const handleTableChange = (pagination: any) => {
+    setPagination(pagination);
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
   return (
     <div>
-      <Table columns={columns} dataSource={users} rowKey="id" loading={loading} />
+      <Search
+        placeholder="Tìm kiếm người dùng"
+        onSearch={handleSearch}
+        style={{ marginBottom: 16 }}
+      />
+      <Table
+        columns={columns}
+        dataSource={Array.isArray(users) ? users : []}
+        rowKey="id"
+        loading={loading}
+        pagination={pagination}
+        onChange={handleTableChange}
+      />
       <Modal
         title="Edit User"
         visible={modalVisible}
@@ -143,6 +180,6 @@ const UserManagement: React.FC = () => {
       </Modal>
     </div>
   );
-};
+});
 
 export default UserManagement;

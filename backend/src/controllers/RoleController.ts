@@ -1,14 +1,20 @@
 import { Request, Response } from 'express';
 import { RoleModel, Role } from '../models/Role';
+import cache from '../utils/cache';
 
 export class RoleController {
   static async getAllRoles(req: Request, res: Response) {
     try {
-      const roles = await RoleModel.getAll();
-      res.json(roles);
+      const { roles, total } = await RoleModel.getAll(page, limit, search);
+      res.json({
+        roles,
+        total,
+        page,
+        limit
+      });
     } catch (error) {
       console.error('Error getting all roles:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: 'Internal server error', error: error.message });
     }
   }
 

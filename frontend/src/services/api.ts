@@ -23,7 +23,7 @@ export const login = (username: string, password: string) =>
 export const register = (username: string, password: string, email: string) =>
   api.post('/auth/register', { username, password, email });
 
-export const getUsers = () => api.get('/users');
+export const getUsers = () => api.get('/users').then(response => response.data);
 
 export const getUser = (id: string) => api.get(`/users/${id}`);
 
@@ -31,7 +31,7 @@ export const updateUser = (id: string, data: any) => api.put(`/users/${id}`, dat
 
 export const deleteUser = (id: string) => api.delete(`/users/${id}`);
 
-export const getRoles = () => api.get('/roles');
+export const getRoles = () => api.get('/roles').then(response => response.data);
 
 export const getRole = (id: string) => api.get(`/roles/${id}`);
 

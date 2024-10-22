@@ -8,6 +8,11 @@
     "react": "^18.3.1"
   },
   "scripts": {
-    "start": "cd frontend && npm start"
+    "start": "node backend/dist/app.js",
+    "build": "cd frontend && npm run build && cd ../backend && npm run build",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\""
+  },
+  "devDependencies": {
+    "concurrently": "^6.2.0"
   }
 }

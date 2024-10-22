@@ -1,42 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Space, Button, Modal, Form, Input, Select, message } from 'antd';
 import { getPermissions, createPermission, updatePermission, deletePermission, getRoles, assignPermissionToRole, removePermissionFromRole } from '../../services/api';
 
 const { Option } = Select;
+const { Search } = Input;
 
-const PermissionManagement: React.FC = () => {
+const PermissionManagement: React.FC = React.memo(() => {
   const [permissions, setPermissions] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingPermissionId, setEditingPermissionId] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [searchText, setSearchText] = useState('');
 
-  useEffect(() => {
-    fetchPermissions();
-    fetchRoles();
-  }, []);
-
-  const fetchPermissions = async () => {
+  const fetchPermissions = useCallback(async () => {
     setLoading(true);
     try {
       const response = await getPermissions();
       setPermissions(response.data);
+      setPagination(prev => ({ ...prev, total: response.data.length }));
     } catch (error) {
-      message.error('Failed to fetch permissions');
+      message.error('Không thể tải danh sách quyền. Vui lòng thử lại sau.');
+      console.error('Error fetching permissions:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     try {
       const response = await getRoles();
       setRoles(response.data);
     } catch (error) {
-      message.error('Failed to fetch roles');
+      message.error('Không thể tải danh sách vai trò. Vui lòng thử lại sau.');
+      console.error('Error fetching roles:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchPermissions();
+    fetchRoles();
+  }, [fetchPermissions, fetchRoles]);
 
   const handleCreate = () => {
     setEditingPermissionId(null);
@@ -53,10 +59,11 @@ const PermissionManagement: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await deletePermission(id);
-      message.success('Permission deleted successfully');
+      message.success('Xóa quyền thành công');
       fetchPermissions();
     } catch (error) {
-      message.error('Failed to delete permission');
+      message.error('Không thể xóa quyền. Vui lòng thử lại sau.');
+      console.error('Error deleting permission:', error);
     }
   };
 
@@ -65,60 +72,67 @@ const PermissionManagement: React.FC = () => {
       const values = await form.validateFields();
       if (editingPermissionId) {
         await updatePermission(editingPermissionId, values);
-        message.success('Permission updated successfully');
+        message.success('Cập nhật quyền thành công');
       } else {
         await createPermission(values);
-        message.success('Permission created successfully');
+        message.success('Tạo quyền mới thành công');
       }
       setModalVisible(false);
       form.resetFields();
       fetchPermissions();
     } catch (error) {
-      message.error('Failed to save permission');
+      if (error instanceof Error) {
+        message.error(`Không thể lưu quyền: ${error.message}`);
+      } else {
+        message.error('Không thể lưu quyền. Vui lòng thử lại sau.');
+      }
+      console.error('Error saving permission:', error);
     }
   };
 
   const handleAssignToRole = async (permissionId: string, roleId: string) => {
     try {
       await assignPermissionToRole(roleId, permissionId);
-      message.success('Permission assigned to role successfully');
+      message.success('Gán quyền cho vai trò thành công');
     } catch (error) {
-      message.error('Failed to assign permission to role');
+      message.error('Không thể gán quyền cho vai trò. Vui lòng thử lại sau.');
+      console.error('Error assigning permission to role:', error);
     }
   };
 
   const handleRemoveFromRole = async (permissionId: string, roleId: string) => {
     try {
       await removePermissionFromRole(roleId, permissionId);
-      message.success('Permission removed from role successfully');
+      message.success('Gỡ bỏ quyền khỏi vai trò thành công');
     } catch (error) {
-      message.error('Failed to remove permission from role');
+      message.error('Không thể gỡ bỏ quyền khỏi vai trò. Vui lòng thử lại sau.');
+      console.error('Error removing permission from role:', error);
     }
   };
 
   const columns = [
     {
-      title: 'Name',
+      title: 'Tên',
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Description',
+      title: 'Mô tả',
       dataIndex: 'description',
       key: 'description',
     },
     {
-      title: 'Action',
+      title: 'Hành động',
       key: 'action',
       render: (_: any, record: any) => (
         <Space size="middle">
-          <Button onClick={() => handleEdit(record)}>Edit</Button>
+          <Button onClick={() => handleEdit(record)}>Sửa</Button>
           <Button onClick={() => handleDelete(record.id)} danger>
-            Delete
+            Xóa
           </Button>
           <Select
             style={{ width: 200 }}
-            placeholder="Assign to role"
+            placeholder="Gán cho vai trò"
             onChange={(roleId) => handleAssignToRole(record.id, roleId)}
           >
             {roles.map((role: any) => (
@@ -130,14 +144,35 @@ const PermissionManagement: React.FC = () => {
     },
   ];
 
+  const handleTableChange = (pagination: any) => {
+    setPagination(pagination);
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
   return (
     <div>
+      <Search
+        placeholder="Tìm kiếm quyền"
+        onSearch={handleSearch}
+        style={{ marginBottom: 16 }}
+      />
       <Button onClick={handleCreate} type="primary" style={{ marginBottom: 16 }}>
-        Create New Permission
+        Tạo quyền mới
       </Button>
-      <Table columns={columns} dataSource={permissions} rowKey="id" loading={loading} />
+      <Table
+        columns={columns}
+        dataSource={permissions}
+        rowKey="id"
+        loading={loading}
+        pagination={pagination}
+        onChange={handleTableChange}
+      />
       <Modal
-        title={editingPermissionId ? "Edit Permission" : "Create New Permission"}
+        title={editingPermissionId ? "Sửa quyền" : "Tạo quyền mới"}
         visible={modalVisible}
         onOk={handleModalOk}
         onCancel={() => setModalVisible(false)}
@@ -145,15 +180,15 @@ const PermissionManagement: React.FC = () => {
         <Form form={form} layout="vertical">
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please input the permission name!' }]}
+            label="Tên"
+            rules={[{ required: true, message: 'Vui lòng nhập tên quyền!' }]}
           >
             <Input />
           </Form.Item>
           <Form.Item
             name="description"
-            label="Description"
-            rules={[{ required: true, message: 'Please input the permission description!' }]}
+            label="Mô tả"
+            rules={[{ required: true, message: 'Vui lòng nhập mô tả quyền!' }]}
           >
             <Input.TextArea />
           </Form.Item>
@@ -161,6 +196,6 @@ const PermissionManagement: React.FC = () => {
       </Modal>
     </div>
   );
-};
+});
 
 export default PermissionManagement;

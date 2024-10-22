@@ -43,11 +43,30 @@ export class UserModel {
     return user;
   }
 
-  static async getAll(): Promise<User[]> {
+  static async getAll(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }> {
     const db = await openDb();
-    const users = await db.all<User[]>('SELECT * FROM users');
+    const offset = (page - 1) * limit;
+    let query = 'SELECT * FROM users';
+    let countQuery = 'SELECT COUNT(*) as count FROM users';
+    const params = [];
+
+    if (search) {
+      query += ' WHERE username LIKE ? OR email LIKE ?';
+      countQuery += ' WHERE username LIKE ? OR email LIKE ?';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    query += ' LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+
+    const users = await db.all<User[]>(query, params);
+    const [{ count }] = await db.all(countQuery, search ? [`%${search}%`, `%${search}%`] : []);
+
     await db.close();
-    return users.map(user => ({ ...user, email: decrypt(user.email) }));
+    return {
+      users: users.map(user => ({ ...user, email: decrypt(user.email) })),
+      total: count
+    };
   }
 
   static async update(id: string, updates: Partial<User>): Promise<void> {
