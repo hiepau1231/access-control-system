@@ -69,72 +69,69 @@ This project aims to design and implement a web-based system that provides role-
 ```
 project-root/
 ├── frontend/
-│   ├── public/
-│   │   └── index.html
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── access/
-│   │   │   │   ├── AccessManagement.tsx
-│   │   │   │   └── AccessManagement.test.tsx
-│   │   │   ├── auth/
-│   │   │   │   ├── LoginForm.tsx
-│   │   │   │   ├── LoginForm.test.tsx
-│   │   │   │   ├── RegisterForm.tsx
-│   │   │   │   └── RegisterForm.test.tsx
-│   │   │   ├── dashboard/
-│   │   │   │   └── Dashboard.tsx
-│   │   │   ├── user/
-│   │   │   │   ├── UserManagement.tsx
-│   │   │   │   └── UserManagement.test.tsx
-│   │   │   ├── role/
-│   │   │   │   └── RoleManagement.tsx
-│   │   │   └── permission/
-│   │   │       └── PermissionManagement.tsx
-│   │   ├── pages/
-│   │   │   ├── access/
-│   │   │   │   └── AccessManagementPage.tsx
-│   │   │   ├── dashboard/
-│   │   │   │   └── DashboardPage.tsx
-│   │   │   ├── login/
-│   │   │   │   └── LoginPage.tsx
-│   │   │   ├── register/
-│   │   │   │   └── RegisterPage.tsx
-│   │   │   └── user/
-│   │   │       └── UserManagementPage.tsx
-│   │   ├── services/
-│   │   │   └── api.ts
-│   │   ├── App.tsx
-│   │   ├── index.tsx
-│   │   └── setupTests.ts
-│   ├── package.json
-│   └── tsconfig.json
+│ ├── public/
+│ │ └── index.html
+│ ├── src/
+│ │ ├── components/
+│ │ │ ├── auth/
+│ │ │ │ ├── LoginForm.tsx
+│ │ │ │ └── RegisterForm.tsx
+│ │ │ ├── user/
+│ │ │ │ └── UserManagement.tsx
+│ │ │ ├── role/
+│ │ │ │ └── RoleManagement.tsx
+│ │ │ └── permission/
+│ │ │ └── PermissionManagement.tsx
+│ │ ├── pages/
+│ │ │ ├── dashboard/
+│ │ │ │ └── DashboardPage.tsx
+│ │ │ ├── login/
+│ │ │ │ └── LoginPage.tsx
+│ │ │ ├── register/
+│ │ │ │ └── RegisterPage.tsx
+│ │ │ ├── user/
+│ │ │ │ └── UserManagementPage.tsx
+│ │ │ ├── role/
+│ │ │ │ └── RoleManagementPage.tsx
+│ │ │ ├── permission/
+│ │ │ │ └── PermissionManagementPage.tsx
+│ │ │ └── settings/
+│ │ │ └── SettingsPage.tsx
+│ │ ├── services/
+│ │ │ └── api.ts
+│ │ └── App.tsx
+│ ├── package.json
+│ └── tsconfig.json
 ├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── database.ts
-│   │   ├── controllers/
-│   │   │   ├── AuthController.ts
-│   │   │   ├── UserController.ts
-│   │   │   ├── RoleController.ts
-│   │   │   └── PermissionController.ts
-│   │   ├── middleware/
-│   │   │   └── authMiddleware.ts
-│   │   ├── models/
-│   │   │   ├── User.ts
-│   │   │   ├── Role.ts
-│   │   │   └── Permission.ts
-│   │   ├── routes/
-│   │   │   ├── authRoutes.ts
-│   │   │   ├── userRoutes.ts
-│   │   │   ├── roleRoutes.ts
-│   │   │   └── permissionRoutes.ts
-│   │   ├── utils/
-│   │   │   └── encryption.ts
-│   │   └── app.ts
-│   ├── package.json
-│   └── tsconfig.json
+│ ├── src/
+│ │ ├── config/
+│ │ │ └── database.ts
+│ │ ├── controllers/
+│ │ │ ├── AuthController.ts
+│ │ │ ├── UserController.ts
+│ │ │ ├── RoleController.ts
+│ │ │ └── PermissionController.ts
+│ │ ├── middleware/
+│ │ │ └── authMiddleware.ts
+│ │ ├── models/
+│ │ │ ├── User.ts
+│ │ │ ├── Role.ts
+│ │ │ └── Permission.ts
+│ │ ├── routes/
+│ │ │ ├── authRoutes.ts
+│ │ │ ├── userRoutes.ts
+│ │ │ ├── roleRoutes.ts
+│ │ │ └── permissionRoutes.ts
+│ │ ├── utils/
+│ │ │ ├── encryption.ts
+│ │ │ └── cache.ts
+│ │ └── app.ts
+│ ├── package.json
+│ └── tsconfig.json
 ├── package.json
 ├── README.md
+├── instruction.md
+├── currenttask.md
 └── test.md
 
 ## Data Type Definitions

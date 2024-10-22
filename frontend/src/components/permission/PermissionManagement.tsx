@@ -29,6 +29,10 @@ const PermissionManagement: React.FC = React.memo(() => {
     }
   }, []);
 
+  const memoizedFetchPermissions = useCallback(() => {
+    fetchPermissions();
+  }, [fetchPermissions]);
+
   const fetchRoles = useCallback(async () => {
     try {
       const response = await getRoles();
@@ -40,9 +44,8 @@ const PermissionManagement: React.FC = React.memo(() => {
   }, []);
 
   useEffect(() => {
-    fetchPermissions();
     fetchRoles();
-  }, [fetchPermissions, fetchRoles]);
+  }, [fetchRoles]);
 
   const handleCreate = () => {
     setEditingPermissionId(null);

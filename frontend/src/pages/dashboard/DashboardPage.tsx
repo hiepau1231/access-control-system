@@ -1,31 +1,39 @@
-import React from 'react';
-import { Typography, Button, Space } from 'antd';
-import { Link } from 'react-router-dom';
+import React from 'react'
+import { Link } from 'react-router-dom'
+import { Button, Card } from "antd"
+import { UserOutlined, SafetyCertificateOutlined, KeyOutlined, SettingOutlined } from '@ant-design/icons'
 
-const { Title } = Typography;
+export default function DashboardPage() {
+  const username = "Người dùng" // TODO: Fetch actual user data
 
-const DashboardPage: React.FC = () => {
-  const username = "Người dùng"; // TODO: Fetch actual user data
+  const menuItems = [
+    { title: "Quản lý người dùng", icon: UserOutlined, link: "/users" },
+    { title: "Quản lý vai trò", icon: SafetyCertificateOutlined, link: "/roles" },
+    { title: "Quản lý quyền truy cập", icon: KeyOutlined, link: "/permissions" },
+    { title: "Cài đặt hệ thống", icon: SettingOutlined, link: "/settings" },
+  ]
 
   return (
-    <div className="p-6">
-      <Title level={2}>Xin chào, {username}</Title>
-      <Space direction="vertical" size="large" style={{ display: 'flex' }}>
-        <Link to="/users">
-          <Button type="primary">Quản lý người dùng</Button>
-        </Link>
-        <Link to="/roles">
-          <Button type="primary">Quản lý vai trò</Button>
-        </Link>
-        <Link to="/permissions">
-          <Button type="primary">Quản lý quyền truy cập</Button>
-        </Link>
-        <Link to="/settings">
-          <Button type="primary">Cài đặt hệ thống</Button>
-        </Link>
-      </Space>
+    <div className="container mx-auto p-6">
+      <Card className="mb-6">
+        <Card.Meta
+          title={<h2 className="text-3xl font-bold">Xin chào, {username}</h2>}
+          description="Chào mừng bạn đến với bảng điều khiển quản lý truy cập và bảo mật dữ liệu"
+        />
+      </Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {menuItems.map((item, index) => (
+          <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
+            <Card.Meta
+              title={item.title}
+              avatar={<item.icon className="text-2xl" />}
+            />
+            <Link to={item.link}>
+              <Button className="w-full mt-4">Truy cập</Button>
+            </Link>
+          </Card>
+        ))}
+      </div>
     </div>
-  );
-};
-
-export default DashboardPage;
+  )
+}
