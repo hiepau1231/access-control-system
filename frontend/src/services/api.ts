@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { handleError } from '../utils/errorHandler';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -31,8 +31,10 @@ api.interceptors.response.use(
   }
 );
 
-export const login = (username: string, password: string) =>
-  api.post('/auth/login', { username, password });
+export const login = async (username: string, password: string) => {
+  const response = await axios.post(`${API_URL}/auth/login`, { username, password });
+  return response;
+};
 
 export const register = (username: string, password: string, email: string) =>
   api.post('/auth/register', { username, password, email });

@@ -19,7 +19,7 @@
 
 ## 4. Triển khai Kiểm soát truy cập dựa trên RBAC
 - [x] Xác thực người dùng: Phát triển chức năng đăng nhập người dùng với kiểm tra xác thực
-- [ ] Middleware cho kiểm soát truy cập: Tạo middleware để kiểm soát truy cập dựa trên vai trò của người dùng
+- [x] Middleware cho kiểm soát truy cập: Tạo middleware để kiểm soát truy cập dựa trên vai trò của người dùng
 - [ ] Kiểm tra quyền: Triển khai các hàm kiểm tra quyền của người dùng dựa trên vai trò được gán
 
 ## 5. Triển khai Mã hóa dữ liệu với Khóa bí mật
@@ -28,14 +28,18 @@
 - [ ] Quản lý Khóa bí mật: Thiết lập phương pháp lưu trữ và truy xuất an toàn cho Khóa bí mật
 
 ## 6. Hoàn thiện và Báo cáo dự án
-- [ ] Sửa lỗi: Xác định và sửa các lỗi còn tồn tại trong ứng dụng
+- [x] Sửa lỗi: Xác định và sửa các lỗi còn tồn tại trong ứng dụng
 - [ ] Tối ưu hóa hiệu suất: Tinh chỉnh mã và cải thiện hiệu suất
 - [ ] Tài liệu: Viết báo cáo chi tiết về quá trình phát triển và kết quả cuối cùng
 
 ## Nhiệm vụ tiếp theo
-1. Hoàn thành triển khai Kiểm soát truy cập dựa trên RBAC (Task 4).
-2. Triển khai Mã hóa dữ liệu với Khóa bí mật (Task 5).
-3. Thực hiện kiểm thử toàn diện trên toàn bộ hệ thống.
-4. Sửa lỗi và tối ưu hóa hiệu suất.
-5. Hoàn thành tài liệu dự án.
-6. Chuẩn bị cho việc triển khai sản phẩm.
+1. Hoàn thành triển khai Kiểm soát truy cập dựa trên RBAC (Task 4):
+   - Triển khai các hàm kiểm tra quyền của người dùng dựa trên vai trò được gán
+2. Triển khai Mã hóa dữ liệu với Khóa bí mật (Task 5):
+   - Triển khai thuật toán mã hóa
+   - Xây dựng chức năng Mã hóa/Giải mã
+   - Thiết lập quản lý Khóa bí mật
+3. Tối ưu hóa hiệu suất của ứng dụng
+4. Viết tài liệu và báo cáo chi tiết về dự án
+5. Thực hiện kiểm thử toàn diện trên toàn bộ hệ thống
+6. Chuẩn bị cho việc triển khai sản phẩm

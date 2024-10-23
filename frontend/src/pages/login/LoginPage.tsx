@@ -15,9 +15,13 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await login(values.username, values.password);
-      localStorage.setItem('token', response.data.token);
-      message.success('Đăng nhập thành công');
-      navigate('/dashboard');
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        message.success('Đăng nhập thành công');
+        navigate('/dashboard');
+      } else {
+        throw new Error('Token not found in response');
+      }
     } catch (error) {
       message.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.');
     } finally {
