@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Menu } from 'antd';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   DashboardOutlined, 
   UserOutlined, 
@@ -20,6 +20,15 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ isDarkMode, toggleDarkMode }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Clear the token from localStorage
+    localStorage.removeItem('token');
+    // Redirect to login page
+    navigate('/login');
+  };
+
   return (
     <Sider
       breakpoint="lg"
@@ -49,7 +58,7 @@ const Navigation: React.FC<NavigationProps> = ({ isDarkMode, toggleDarkMode }) =
         <Menu.Item key="5" icon={<SettingOutlined />}>
           <Link to="/settings">Settings</Link>
         </Menu.Item>
-        <Menu.Item key="6" icon={<LogoutOutlined />}>
+        <Menu.Item key="6" icon={<LogoutOutlined />} onClick={handleLogout}>
           Logout
         </Menu.Item>
         <Menu.Item 

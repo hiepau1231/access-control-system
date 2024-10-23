@@ -1,5 +1,5 @@
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import { Spin, ConfigProvider, theme as antdTheme } from 'antd';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navigation from './components/common/Navigation';
@@ -12,6 +12,19 @@ const UserManagement = lazy(() => import('./pages/user/UserManagementPage'));
 const RoleManagement = lazy(() => import('./pages/role/RoleManagementPage'));
 const PermissionManagement = lazy(() => import('./pages/permission/PermissionManagementPage'));
 const Settings = lazy(() => import('./pages/settings/SettingsPage'));
+
+const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
+  const navigate = useNavigate();
+  const isAuthenticated = localStorage.getItem('token') !== null;
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+
+  return isAuthenticated ? element : null;
+};
 
 const AppContent: React.FC = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
@@ -30,14 +43,15 @@ const AppContent: React.FC = () => {
               <div className={`p-4 sm:p-6 lg:p-8 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <Suspense fallback={<div className="flex justify-center items-center h-64"><Spin size="large" /></div>}>
                   <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/users" element={<UserManagement />} />
-                    <Route path="/roles" element={<RoleManagement />} />
-                    <Route path="/permissions" element={<PermissionManagement />} />
-                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/" element={<PrivateRoute element={<Dashboard />} />} />
+                    <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
+                    <Route path="/users" element={<PrivateRoute element={<UserManagement />} />} />
+                    <Route path="/roles" element={<PrivateRoute element={<RoleManagement />} />} />
+                    <Route path="/permissions" element={<PrivateRoute element={<PermissionManagement />} />} />
+                    <Route path="/settings" element={<PrivateRoute element={<Settings />} />} />
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Routes>
                 </Suspense>
               </div>
