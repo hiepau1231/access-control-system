@@ -166,3 +166,53 @@ input, button, select, textarea {
 }
 
 /* Add more dark mode styles for other Ant Design components as needed */
+
+/* Thêm vào cuối file */
+.settings-select-dark .ant-select-selector {
+  background-color: #374151 !important;
+  border-color: #4B5563 !important;
+  color: #E5E7EB !important;
+}
+
+.settings-select-dark .ant-select-arrow {
+  color: #E5E7EB !important;
+}
+
+/* Thêm vào cuối file */
+.ant-menu {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px); /* Điều chỉnh chiều cao nếu cần */
+}
+
+.ant-menu-item:last-child {
+  margin-top: auto;
+}
+
+/* Thêm vào cuối file */
+.dark-select .ant-select-selector {
+  background-color: #374151 !important;
+  border-color: #4B5563 !important;
+  color: #E5E7EB !important;
+}
+
+.dark-select .ant-select-arrow {
+  color: #E5E7EB !important;
+}
+
+.dark-select .ant-select-dropdown {
+  background-color: #374151 !important;
+  border-color: #4B5563 !important;
+}
+
+.dark-select .ant-select-item {
+  color: #E5E7EB !important;
+}
+
+.dark-select .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background-color: #4B5563 !important;
+}
+
+.dark-select .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background-color: #6B7280 !important;
+}

@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Layout, Menu } from 'antd';
 import { Link } from 'react-router-dom';
-import { Switch, Drawer } from 'antd';
 import { 
-  MenuOutlined,
   DashboardOutlined, 
   UserOutlined, 
   TeamOutlined, 
-  LockOutlined, 
-  SettingOutlined, 
-  LogoutOutlined, 
-  BulbOutlined 
+  KeyOutlined, 
+  SettingOutlined,
+  LogoutOutlined,
+  BulbOutlined,
+  BulbFilled
 } from '@ant-design/icons';
-import { logout } from '../../services/auth';
-import Button from './Button';
+
+const { Sider } = Layout;
 
 interface NavigationProps {
   isDarkMode: boolean;
@@ -20,94 +20,58 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ isDarkMode, toggleDarkMode }) => {
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-
-  const items = [
-    { key: 'dashboard', icon: <DashboardOutlined />, label: 'Dashboard', path: '/' },
-    { key: 'users', icon: <UserOutlined />, label: 'Users', path: '/users' },
-    { key: 'roles', icon: <TeamOutlined />, label: 'Roles', path: '/roles' },
-    { key: 'permissions', icon: <LockOutlined />, label: 'Permissions', path: '/permissions' },
-    { key: 'settings', icon: <SettingOutlined />, label: 'Settings', path: '/settings' },
-  ];
-
-  const NavContent = () => (
-    <>
-      <div className="p-4">
-        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Your Logo</h2>
-      </div>
-      <nav>
-        <ul className="mt-8" role="menu">
-          {items.map((item) => (
-            <li key={item.key} className="mb-2" role="none">
-              <Link
-                to={item.path}
-                className={`flex items-center px-4 py-2 ${
-                  isDarkMode 
-                    ? 'text-gray-300 hover:bg-gray-700' 
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                onClick={() => setIsDrawerVisible(false)}
-                role="menuitem"
-              >
-                {item.icon}
-                <span className="ml-2">{item.label}</span>
-              </Link>
-            </li>
-          ))}
-          <li className="mb-2" role="none">
-            <a
-              onClick={() => { logout(); setIsDrawerVisible(false); }}
-              className={`flex items-center px-4 py-2 cursor-pointer ${
-                isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              role="menuitem"
-            >
-              <LogoutOutlined />
-              <span className="ml-2">Logout</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-        <Switch
-          checkedChildren={<BulbOutlined />}
-          unCheckedChildren={<BulbOutlined />}
-          checked={isDarkMode}
-          onChange={toggleDarkMode}
-          aria-label="Toggle dark mode"
-        />
-      </div>
-    </>
-  );
-
   return (
-    <>
-      <nav className={`hidden lg:block h-screen w-64 fixed left-0 top-0 ${
-        isDarkMode ? 'bg-gray-800' : 'bg-white'
-      } shadow-lg`}>
-        <NavContent />
-      </nav>
-      <div className="lg:hidden">
-        <Button
-          variant="secondary"
-          icon={<MenuOutlined />}
-          onClick={() => setIsDrawerVisible(true)}
-          className="fixed top-4 left-4 z-20"
-        >
-          Menu
-        </Button>
-        <Drawer
-          placement="left"
-          closable={false}
-          onClose={() => setIsDrawerVisible(false)}
-          visible={isDrawerVisible}
-          bodyStyle={{ padding: 0 }}
-          width={250}
-        >
-          <NavContent />
-        </Drawer>
+    <Sider
+      breakpoint="lg"
+      collapsedWidth="0"
+      className={`fixed left-0 top-0 bottom-0 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
+    >
+      <div className="logo p-4">
+        <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Your Logo</h2>
       </div>
-    </>
+      <Menu
+        theme={isDarkMode ? 'dark' : 'light'}
+        mode="inline"
+        defaultSelectedKeys={['1']}
+      >
+        <Menu.Item key="1" icon={<DashboardOutlined />}>
+          <Link to="/dashboard">Dashboard</Link>
+        </Menu.Item>
+        <Menu.Item key="2" icon={<UserOutlined />}>
+          <Link to="/users">Users</Link>
+        </Menu.Item>
+        <Menu.Item key="3" icon={<TeamOutlined />}>
+          <Link to="/roles">Roles</Link>
+        </Menu.Item>
+        <Menu.Item key="4" icon={<KeyOutlined />}>
+          <Link to="/permissions">Permissions</Link>
+        </Menu.Item>
+        <Menu.Item key="5" icon={<SettingOutlined />}>
+          <Link to="/settings">Settings</Link>
+        </Menu.Item>
+        <Menu.Item key="6" icon={<LogoutOutlined />}>
+          Logout
+        </Menu.Item>
+        <Menu.Item 
+          key="7" 
+          icon={isDarkMode ? <BulbFilled /> : <BulbOutlined />}
+          onClick={toggleDarkMode}
+          className="mt-auto"
+        >
+          <div className="flex items-center justify-between">
+            <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+            <div 
+              className={`w-10 h-5 flex items-center ${isDarkMode ? 'bg-blue-600' : 'bg-gray-300'} rounded-full p-1 duration-300 ease-in-out`}
+              onClick={toggleDarkMode}
+            >
+              <div 
+                className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ease-in-out ${isDarkMode ? 'translate-x-5' : ''}`}
+              ></div>
+            </div>
+          </div>
+        </Menu.Item>
+      </Menu>
+    </Sider>
   );
 };
 
