@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { openDb } from '../config/database';
+import { Model, DataTypes } from 'sequelize';
+import { sequelize } from '../config/database';
 
 export interface Role {
   id: string;
@@ -49,3 +51,36 @@ export class RoleModel {
     await db.close();
   }
 }
+
+export class Role extends Model {
+  public id!: string;
+  public name!: string;
+  public description!: string;
+}
+
+Role.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    description: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'Role',
+    tableName: 'roles', // Đảm bảo tên bảng khớp với tên trong cơ sở dữ liệu
+    timestamps: false, // Tắt timestamps mặc định
+  }
+);
+
+export default Role;

@@ -1,5 +1,12 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
+import { Sequelize } from 'sequelize';
+
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: './database.sqlite', // Đường dẫn đến file SQLite của bạn
+  logging: false // Tắt logging SQL queries, bạn có thể bật lại nếu muốn debug
+});
 
 export async function openDb() {
   return open({
@@ -44,3 +51,5 @@ export async function initializeDatabase() {
 
   await db.close();
 }
+
+export { sequelize };

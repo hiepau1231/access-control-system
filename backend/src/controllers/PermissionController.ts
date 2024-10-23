@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PermissionModel, Permission } from '../models/Permission';
+import { Op } from 'sequelize';
 
 export class PermissionController {
   static async getAllPermissions(req: Request, res: Response) {
@@ -86,6 +87,39 @@ export class PermissionController {
       res.json(permissions);
     } catch (error) {
       console.error('Error getting permissions for role:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  static async getPermissions(req: Request, res: Response) {
+    try {
+      const { page = 1, limit = 10, search } = req.query;
+      const offset = (Number(page) - 1) * Number(limit);
+
+      let whereClause = {};
+      if (search) {
+        whereClause = {
+          [Op.or]: [
+            { name: { [Op.like]: `%${search}%` } },
+            { description: { [Op.like]: `%${search}%` } }
+          ]
+        };
+      }
+
+      const permissions = await Permission.findAndCountAll({
+        where: whereClause,
+        limit: Number(limit),
+        offset: offset
+      });
+
+      res.json({
+        total: permissions.count,
+        permissions: permissions.rows,
+        currentPage: Number(page),
+        totalPages: Math.ceil(permissions.count / Number(limit))
+      });
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   }

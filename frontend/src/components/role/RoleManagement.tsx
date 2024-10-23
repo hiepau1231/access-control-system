@@ -1,159 +1,111 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Space, Button, Modal, Form, Input, message } from 'antd';
-import { getRoles, createRole, updateRole, deleteRole } from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import { Table, Input, Button, Space } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { getRoles, deleteRole } from '../../services/api';
+import { handleError, showSuccess } from '../../utils/errorHandler';
 
 const { Search } = Input;
 
-const RoleManagement: React.FC = React.memo(() => {
-  const [roles, setRoles] = useState<any[]>([]);
+interface Role {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const RoleManagement: React.FC = () => {
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [form] = Form.useForm();
-  const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
 
-  const fetchRoles = useCallback(async () => {
+  const fetchRoles = async (page: number = 1, limit: number = 10, search: string = '') => {
     setLoading(true);
     try {
-      const response = await getRoles();
-      setRoles(Array.isArray(response.data) ? response.data : []);
-      setPagination(prev => ({ ...prev, total: Array.isArray(response.data) ? response.data.length : 0 }));
+      const response = await getRoles(page, limit, search);
+      setRoles(response.roles);
+      setPagination({
+        ...pagination,
+        current: response.currentPage,
+        total: response.total,
+      });
     } catch (error) {
-      message.error('Không thể tải danh sách vai trò. Vui lòng thử lại sau.');
-      console.error('Error fetching roles:', error);
+      handleError(error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchRoles();
-  }, [fetchRoles]);
+  }, []);
 
-  const handleCreate = () => {
-    setEditingRoleId(null);
-    form.resetFields();
-    setModalVisible(true);
+  const handleTableChange = (pagination: any) => {
+    fetchRoles(pagination.current, pagination.pageSize, searchText);
   };
 
-  const handleEdit = (record: any) => {
-    setEditingRoleId(record.id);
-    form.setFieldsValue(record);
-    setModalVisible(true);
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+    fetchRoles(1, pagination.pageSize, value);
+  };
+
+  const handleEdit = (record: Role) => {
+    // Implement edit functionality
+    console.log('Edit role:', record);
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteRole(id);
-      message.success('Xóa vai trò thành công');
-      fetchRoles();
+      showSuccess('Role deleted successfully');
+      fetchRoles(pagination.current, pagination.pageSize, searchText);
     } catch (error) {
-      message.error('Không thể xóa vai trò. Vui lòng thử lại sau.');
-      console.error('Error deleting role:', error);
-    }
-  };
-
-  const handleModalOk = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editingRoleId) {
-        await updateRole(editingRoleId, values);
-        message.success('Cập nhật vai trò thành công');
-      } else {
-        await createRole(values);
-        message.success('Tạo vai trò mới thành công');
-      }
-      setModalVisible(false);
-      form.resetFields();
-      fetchRoles();
-    } catch (error) {
-      if (error instanceof Error) {
-        message.error(`Không thể lưu vai trò: ${error.message}`);
-      } else {
-        message.error('Không thể lưu vai trò. Vui lòng thử lại sau.');
-      }
-      console.error('Error saving role:', error);
+      handleError(error);
     }
   };
 
   const columns = [
     {
-      title: 'Tên',
+      title: 'Name',
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Mô tả',
+      title: 'Description',
       dataIndex: 'description',
       key: 'description',
     },
     {
-      title: 'Hành động',
+      title: 'Action',
       key: 'action',
-      render: (_: any, record: any) => (
+      render: (_: any, record: Role) => (
         <Space size="middle">
-          <Button onClick={() => handleEdit(record)}>Sửa</Button>
+          <Button onClick={() => handleEdit(record)}>Edit</Button>
           <Button onClick={() => handleDelete(record.id)} danger>
-            Xóa
+            Delete
           </Button>
         </Space>
       ),
     },
   ];
 
-  const handleTableChange = (pagination: any) => {
-    setPagination(pagination);
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchText(value);
-    setPagination(prev => ({ ...prev, current: 1 }));
-  };
-
   return (
     <div>
+      <h1>Role Management</h1>
       <Search
-        placeholder="Tìm kiếm vai trò"
+        placeholder="Search roles"
         onSearch={handleSearch}
-        style={{ marginBottom: 16 }}
+        style={{ width: 200, marginBottom: 16 }}
       />
-      <Button onClick={handleCreate} type="primary" style={{ marginBottom: 16 }}>
-        Tạo vai trò mới
-      </Button>
       <Table
         columns={columns}
-        dataSource={Array.isArray(roles) ? roles : []}
+        dataSource={roles}
         rowKey="id"
-        loading={loading}
         pagination={pagination}
+        loading={loading}
         onChange={handleTableChange}
       />
-      <Modal
-        title={editingRoleId ? "Sửa vai trò" : "Tạo vai trò mới"}
-        visible={modalVisible}
-        onOk={handleModalOk}
-        onCancel={() => setModalVisible(false)}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label="Tên"
-            rules={[{ required: true, message: 'Vui lòng nhập tên vai trò!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="Mô tả"
-            rules={[{ required: true, message: 'Vui lòng nhập mô tả vai trò!' }]}
-          >
-            <Input.TextArea />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
-});
+};
 
 export default RoleManagement;

@@ -1,87 +1,87 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Space, Button, Modal, Form, Input, Select, message } from 'antd';
-import { getUsers, updateUser, deleteUser, getRoles } from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import { Table, Input, Button, Space } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { getUsers, getRoles, deleteUser } from '../../services/api';
+import { handleError, showSuccess } from '../../utils/errorHandler';
+import { debounce } from '../../utils/debounce';
 
-const { Option } = Select;
 const { Search } = Input;
 
-const UserManagement: React.FC = React.memo(() => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [roles, setRoles] = useState<Array<{ id: string, name: string }>>([]);
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  roleId: string;
+}
+
+interface Role {
+  id: string;
+  name: string;
+}
+
+const UserManagement: React.FC = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [form] = Form.useForm();
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = async (page: number = 1, limit: number = 10, search: string = '') => {
     setLoading(true);
     try {
-      const response = await getUsers();
-      setUsers(Array.isArray(response.data) ? response.data : []);
-      setPagination(prev => ({ ...prev, total: Array.isArray(response.data) ? response.data.length : 0 }));
+      const response = await getUsers(page, limit, search);
+      setUsers(response.users);
+      setPagination({
+        ...pagination,
+        current: response.currentPage,
+        total: response.total,
+      });
     } catch (error) {
-      message.error('Không thể tải danh sách người dùng. Vui lòng thử lại sau.');
-      console.error('Error fetching users:', error);
+      handleError(error);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const memoizedFetchUsers = useCallback(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  useEffect(() => {
-    memoizedFetchUsers();
-    fetchRoles();
-  }, [memoizedFetchUsers]);
+  };
 
   const fetchRoles = async () => {
     try {
       const response = await getRoles();
-      setRoles(response.data);
+      setRoles(response.roles);
     } catch (error) {
-      message.error('Không thể tải danh sách vai trò. Vui lòng thử lại sau.');
-      console.error('Error fetching roles:', error);
+      handleError(error);
     }
   };
 
-  const handleEdit = (record: any) => {
-    setEditingUserId(record.id);
-    form.setFieldsValue(record);
-    setModalVisible(true);
+  useEffect(() => {
+    fetchUsers();
+    fetchRoles();
+  }, []);
+
+  const handleTableChange = (pagination: any) => {
+    fetchUsers(pagination.current, pagination.pageSize, searchText);
+  };
+
+  const debouncedSearch = debounce((value: string) => {
+    setSearchText(value);
+    fetchUsers(1, pagination.pageSize, value);
+  }, 300);
+
+  const handleSearch = (value: string) => {
+    debouncedSearch(value);
+  };
+
+  const handleEdit = (record: User) => {
+    // Implement edit functionality
+    console.log('Edit user:', record);
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteUser(id);
-      message.success('Xóa người dùng thành công');
-      fetchUsers();
+      showSuccess('User deleted successfully');
+      fetchUsers(pagination.current, pagination.pageSize, searchText);
     } catch (error) {
-      message.error('Không thể xóa người dùng. Vui lòng thử lại sau.');
-      console.error('Error deleting user:', error);
-    }
-  };
-
-  const handleModalOk = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editingUserId) {
-        await updateUser(editingUserId, values);
-        message.success('Cập nhật người dùng thành công');
-      }
-      setModalVisible(false);
-      form.resetFields();
-      fetchUsers();
-    } catch (error) {
-      if (error instanceof Error) {
-        message.error(`Không thể cập nhật người dùng: ${error.message}`);
-      } else {
-        message.error('Không thể cập nhật người dùng. Vui lòng thử lại sau.');
-      }
-      console.error('Error updating user:', error);
+      handleError(error);
     }
   };
 
@@ -101,14 +101,14 @@ const UserManagement: React.FC = React.memo(() => {
       dataIndex: 'roleId',
       key: 'roleId',
       render: (roleId: string) => {
-        const role = roles.find((r: any) => r.id === roleId);
+        const role = roles.find((r: Role) => r.id === roleId);
         return role ? role.name : 'N/A';
       },
     },
     {
       title: 'Action',
       key: 'action',
-      render: (_: any, record: any) => (
+      render: (_: any, record: User) => (
         <Space size="middle">
           <Button onClick={() => handleEdit(record)}>Edit</Button>
           <Button onClick={() => handleDelete(record.id)} danger>
@@ -119,67 +119,24 @@ const UserManagement: React.FC = React.memo(() => {
     },
   ];
 
-  const handleTableChange = (pagination: any) => {
-    setPagination(pagination);
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchText(value);
-    setPagination(prev => ({ ...prev, current: 1 }));
-  };
-
   return (
     <div>
+      <h1>User Management</h1>
       <Search
-        placeholder="Tìm kiếm người dùng"
+        placeholder="Search users"
         onSearch={handleSearch}
-        style={{ marginBottom: 16 }}
+        style={{ width: 200, marginBottom: 16 }}
       />
       <Table
         columns={columns}
-        dataSource={Array.isArray(users) ? users : []}
+        dataSource={users}
         rowKey="id"
-        loading={loading}
         pagination={pagination}
+        loading={loading}
         onChange={handleTableChange}
       />
-      <Modal
-        title="Edit User"
-        visible={modalVisible}
-        onOk={handleModalOk}
-        onCancel={() => setModalVisible(false)}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="username"
-            label="Username"
-            rules={[{ required: true, message: 'Please input the username!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { required: true, message: 'Please input the email!' },
-              { type: 'email', message: 'Please enter a valid email!' },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item name="roleId" label="Role" rules={[{ required: true, message: 'Please select a role!' }]}>
-            <Select>
-              {roles.map((role: any) => (
-                <Option key={role.id} value={role.id}>
-                  {role.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
-});
+};
 
 export default UserManagement;

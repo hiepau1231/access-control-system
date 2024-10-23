@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { handleError } from '../utils/errorHandler';
 
 const API_URL = 'http://localhost:3001/api';
 
@@ -17,21 +18,38 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    handleError(error);
+    return Promise.reject(error);
+  }
+);
+
 export const login = (username: string, password: string) =>
   api.post('/auth/login', { username, password });
 
 export const register = (username: string, password: string, email: string) =>
   api.post('/auth/register', { username, password, email });
 
-export const getUsers = () => api.get('/users').then(response => response.data);
+export const getUsers = async (page: number = 1, limit: number = 10, search: string = '') => {
+  const response = await axios.get(`/api/users?page=${page}&limit=${limit}&search=${search}`);
+  return response.data;
+};
 
 export const getUser = (id: string) => api.get(`/users/${id}`);
 
 export const updateUser = (id: string, data: any) => api.put(`/users/${id}`, data);
 
-export const deleteUser = (id: string) => api.delete(`/users/${id}`);
+export const deleteUser = async (id: string) => {
+  const response = await api.delete(`/users/${id}`);
+  return response.data;
+};
 
-export const getRoles = () => api.get('/roles').then(response => response.data);
+export const getRoles = async (page: number = 1, limit: number = 10, search: string = '') => {
+  const response = await api.get(`/roles?page=${page}&limit=${limit}&search=${search}`);
+  return response.data;
+};
 
 export const getRole = (id: string) => api.get(`/roles/${id}`);
 
@@ -41,7 +59,10 @@ export const updateRole = (id: string, data: any) => api.put(`/roles/${id}`, dat
 
 export const deleteRole = (id: string) => api.delete(`/roles/${id}`);
 
-export const getPermissions = () => api.get('/permissions');
+export const getPermissions = async (page: number = 1, limit: number = 10, search: string = '') => {
+  const response = await axios.get(`/api/permissions?page=${page}&limit=${limit}&search=${search}`);
+  return response.data;
+};
 
 export const getPermission = (id: string) => api.get(`/permissions/${id}`);
 

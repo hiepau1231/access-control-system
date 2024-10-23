@@ -81,7 +81,7 @@ project-root/
 │ │ │ ├── role/
 │ │ │ │ └── RoleManagement.tsx
 │ │ │ └── permission/
-│ │ │ └── PermissionManagement.tsx
+│ │ │   └── PermissionManagement.tsx
 │ │ ├── pages/
 │ │ │ ├── dashboard/
 │ │ │ │ └── DashboardPage.tsx
@@ -96,9 +96,13 @@ project-root/
 │ │ │ ├── permission/
 │ │ │ │ └── PermissionManagementPage.tsx
 │ │ │ └── settings/
-│ │ │ └── SettingsPage.tsx
+│ │ │   └── SettingsPage.tsx
 │ │ ├── services/
 │ │ │ └── api.ts
+│ │ ├── utils/
+│ │ │ ├── errorHandler.ts
+│ │ │ ├── errorMessages.ts
+│ │ │ └── debounce.ts
 │ │ └── App.tsx
 │ ├── package.json
 │ └── tsconfig.json

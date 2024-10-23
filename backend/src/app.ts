@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { initializeDatabase } from './config/database';
+import { sequelize } from './config/database';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import roleRoutes from './routes/roleRoutes';
@@ -13,11 +13,9 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Khởi tạo database
-initializeDatabase().then(() => {
-  console.log('Database initialized');
-}).catch((error) => {
-  console.error('Error initializing database:', error);
+// Sync database
+sequelize.sync({ force: false }).then(() => {
+  console.log('Database synchronized');
 });
 
 // Sử dụng routes API

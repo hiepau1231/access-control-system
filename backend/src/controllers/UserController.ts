@@ -1,27 +1,47 @@
 import { Request, Response } from 'express';
-import { UserModel, User } from '../models/User';
+import { User } from '../models/User';
+import { Op } from 'sequelize';
 import bcrypt from 'bcrypt';
 import { decrypt } from '../utils/encryption';
 
 export class UserController {
   static async getAllUsers(req: Request, res: Response) {
     try {
-      const { users, total } = await UserModel.getAll(page, limit, search);
+      const { page = 1, limit = 10, search } = req.query;
+      const offset = (Number(page) - 1) * Number(limit);
+
+      let whereClause = {};
+      if (search) {
+        whereClause = {
+          [Op.or]: [
+            { username: { [Op.like]: `%${search}%` } },
+            { email: { [Op.like]: `%${search}%` } }
+          ]
+        };
+      }
+
+      const users = await User.findAndCountAll({
+        where: whereClause,
+        limit: Number(limit),
+        offset: offset,
+        attributes: ['id', 'username', 'email', 'roleId']
+      });
+
       res.json({
-        users: users.map(user => ({ ...user, password: undefined })),
-        total,
-        page,
-        limit
+        total: users.count,
+        users: users.rows,
+        currentPage: Number(page),
+        totalPages: Math.ceil(users.count / Number(limit))
       });
     } catch (error) {
-      console.error('Error getting all users:', error);
-      res.status(500).json({ message: 'Internal server error', error: error.message });
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   }
 
   static async getUserById(req: Request, res: Response) {
     try {
-      const user = await UserModel.findById(req.params.id);
+      const user = await User.findById(req.params.id);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
@@ -41,7 +61,7 @@ export class UserController {
         updates.password = await bcrypt.hash(password, 10);
       }
 
-      await UserModel.update(req.params.id, updates);
+      await User.update(req.params.id, updates);
       res.json({ message: 'User updated successfully' });
     } catch (error) {
       console.error('Error updating user:', error);
@@ -55,7 +75,7 @@ export class UserController {
 
   static async deleteUser(req: Request, res: Response) {
     try {
-      await UserModel.delete(req.params.id);
+      await User.delete(req.params.id);
       res.json({ message: 'User deleted successfully' });
     } catch (error) {
       console.error('Error deleting user:', error);
