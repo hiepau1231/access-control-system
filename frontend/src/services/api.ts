@@ -53,7 +53,7 @@ export const deleteUser = async (id: string) => {
 
 export const getRoles = async (page: number = 1, limit: number = 10, search: string = '') => {
   const response = await api.get(`/roles?page=${page}&limit=${limit}&search=${search}`);
-  return response.data;
+  return Array.isArray(response.data) ? response.data : [];
 };
 
 export const getRole = (id: string) => api.get(`/roles/${id}`);
@@ -88,5 +88,20 @@ export const getPermissionsForRole = (roleId: string) =>
 
 export const assignPermissionsToRole = (roleId: string, permissionIds: string[]) =>
   api.post('/roles/assign-permissions', { roleId, permissionIds });
+
+export const enable2FA = async (): Promise<{ qrCodeUrl: string }> => {
+  const response = await api.post('/auth/enable-2fa');
+  return response.data;
+};
+
+export const verify2FA = async (verificationCode: string): Promise<void> => {
+  await api.post('/auth/verify-2fa', { verificationCode });
+};
+
+export const disable2FA = async (): Promise<void> => {
+  await api.post('/auth/disable-2fa');
+};
+
+export const createUser = (data: any) => api.post('/users', data);
 
 export default api;

@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Table, Input, Button, Space, Row, Col } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
-import { getRoles, deleteRole } from '../../services/api';
-import { handleError, showSuccess } from '../../utils/errorHandler';
+import { Table, Input, message, Space, Modal, Form } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { getRoles, createRole, updateRole, deleteRole } from '../../services/api';
 import { debounce } from '../../utils/debounce';
-import LoadingIndicator from '../common/LoadingIndicator';
-import '../../styles/animations.css'
-
-const { Search } = Input;
+import { useTheme } from '../../contexts/ThemeContext';
+import Button from '../common/Button';
+import VirtualTable from '../common/VirtualTable'; // Tạo component này sau
 
 interface Role {
   id: string;
@@ -15,24 +13,24 @@ interface Role {
   description: string;
 }
 
-const RoleManagement: React.FC = React.memo(() => {
+const RoleManagement: React.FC = () => {
+  const { theme } = useTheme();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-  const [searchText, setSearchText] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [form] = Form.useForm();
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
 
-  const fetchRoles = useCallback(async (page: number = 1, limit: number = 10, search: string = '') => {
+  const fetchRoles = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await getRoles(page, limit, search);
-      setRoles(response.roles);
-      setPagination({
-        ...pagination,
-        current: response.currentPage,
-        total: response.total,
-      });
+      const data = await getRoles();
+      // Ensure that data is an array
+      setRoles(Array.isArray(data) ? data : []);
     } catch (error) {
-      handleError(error);
+      message.error('Failed to fetch roles');
+      setRoles([]); // Set to empty array in case of error
     } finally {
       setLoading(false);
     }
@@ -41,37 +39,6 @@ const RoleManagement: React.FC = React.memo(() => {
   useEffect(() => {
     fetchRoles();
   }, [fetchRoles]);
-
-  const handleTableChange = useCallback((pagination: any) => {
-    fetchRoles(pagination.current, pagination.pageSize, searchText);
-  }, [fetchRoles, searchText]);
-
-  const debouncedSearch = useMemo(
-    () => debounce((value: string) => {
-      setSearchText(value);
-      fetchRoles(1, pagination.pageSize, value);
-    }, 300),
-    [fetchRoles, pagination.pageSize]
-  );
-
-  const handleSearch = useCallback((value: string) => {
-    debouncedSearch(value);
-  }, [debouncedSearch]);
-
-  const handleEdit = useCallback((record: Role) => {
-    // Implement edit functionality
-    console.log('Edit role:', record);
-  }, []);
-
-  const handleDelete = useCallback(async (id: string) => {
-    try {
-      await deleteRole(id);
-      showSuccess('Role deleted successfully');
-      fetchRoles(pagination.current, pagination.pageSize, searchText);
-    } catch (error) {
-      handleError(error);
-    }
-  }, [fetchRoles, pagination.current, pagination.pageSize, searchText]);
 
   const columns = useMemo(() => [
     {
@@ -85,57 +52,112 @@ const RoleManagement: React.FC = React.memo(() => {
       key: 'description',
     },
     {
-      title: 'Action',
-      key: 'action',
-      render: (_: any, record: Role) => (
+      title: 'Actions',
+      key: 'actions',
+      render: (text: string, record: Role) => (
         <Space size="middle">
-          <Button onClick={() => handleEdit(record)}>Edit</Button>
-          <Button onClick={() => handleDelete(record.id)} danger>
-            Delete
-          </Button>
+          <Button icon={<EditOutlined />} onClick={() => showModal(record)}>Edit</Button>
+          <Button icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} danger>Delete</Button>
         </Space>
       ),
     },
-  ], [handleEdit, handleDelete]);
+  ], []);
+
+  const debouncedSearch = useMemo(() => 
+    debounce((value: string) => {
+      // Implement search logic here
+      console.log('Searching for:', value);
+    }, 300),
+    []
+  );
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    debouncedSearch(e.target.value);
+  };
+
+  const showModal = (role?: Role) => {
+    if (role) {
+      setEditingRoleId(role.id);
+      form.setFieldsValue(role);
+    } else {
+      setEditingRoleId(null);
+      form.resetFields();
+    }
+    setIsModalVisible(true);
+  };
+
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      if (editingRoleId) {
+        await updateRole(editingRoleId, values);
+        message.success('Role updated successfully');
+      } else {
+        await createRole(values);
+        message.success('Role created successfully');
+      }
+      setIsModalVisible(false);
+      fetchRoles();
+    } catch (error) {
+      message.error('Failed to save role');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteRole(id);
+      message.success('Role deleted successfully');
+      fetchRoles();
+    } catch (error) {
+      message.error('Failed to delete role');
+    }
+  };
 
   return (
-    <LoadingIndicator loading={loading}>
-      <div role="region" aria-label="Role Management" className="fade-in">
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={24} md={12} lg={8} xl={6}>
-            <h1 id="role-management-title">Role Management</h1>
-          </Col>
-          <Col xs={24} sm={24} md={12} lg={16} xl={18}>
-            <Search
-              placeholder="Search roles"
-              onSearch={handleSearch}
-              style={{ width: '100%' }}
-              aria-label="Search roles"
-            />
-          </Col>
-        </Row>
-        <Table
-          columns={columns}
-          dataSource={roles}
-          rowKey="id"
-          pagination={pagination}
-          loading={loading}
-          onChange={handleTableChange}
-          scroll={{ x: true }}
-          aria-labelledby="role-management-title"
-          summary={() => (
-            <Table.Summary>
-              <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={3}>
-                  Total Roles: {roles.length}
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-            </Table.Summary>
-          )}
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+        <Input.Search
+          placeholder="Search roles"
+          value={searchTerm}
+          onChange={handleSearch}
+          className="w-full sm:w-64 mb-4 sm:mb-0"
         />
+        <Button
+          variant="primary"
+          icon={<PlusOutlined />}
+          onClick={() => showModal()}
+          className="w-full sm:w-auto"
+        >
+          Add Role
+        </Button>
       </div>
-    </LoadingIndicator>
+      <VirtualTable
+        columns={columns}
+        dataSource={roles}
+        loading={loading}
+        rowKey="id"
+        scroll={{ y: 400 }}
+      />
+      <Modal
+        title={editingRoleId ? "Edit Role" : "Add Role"}
+        visible={isModalVisible}
+        onOk={handleOk}
+        onCancel={() => setIsModalVisible(false)}
+        width="95%"
+        style={{ maxWidth: '500px' }}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="Description" rules={[{ required: true }]}>
+            <Input.TextArea />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
   );
-});
+};
 
 export default RoleManagement;

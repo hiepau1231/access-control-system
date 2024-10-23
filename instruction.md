@@ -73,18 +73,17 @@ project-root/
 │ │ └── index.html
 │ ├── src/
 │ │ ├── components/
-│ │ │ ├── auth/
-│ │ │ │ ├── LoginForm.tsx
-│ │ │ │ └── RegisterForm.tsx
+│ │ │ ├── common/
+│ │ │ │ ├── Button.tsx
+│ │ │ │ ├── Navigation.tsx
+│ │ │ │ └── VirtualTable.tsx
 │ │ │ ├── user/
 │ │ │ │ └── UserManagement.tsx
 │ │ │ ├── role/
 │ │ │ │ └── RoleManagement.tsx
-│ │ │ ├── permission/
-│ │ │ │ └── PermissionManagement.tsx
-│ │ │ └── common/
-│ │ │   ├── LoadingIndicator.tsx
-│ │ │   └── Navigation.tsx
+│ │ │ └── ErrorBoundary.tsx
+│ │ ├── contexts/
+│ │ │ └── ThemeContext.tsx
 │ │ ├── pages/
 │ │ │ ├── dashboard/
 │ │ │ │ └── DashboardPage.tsx
@@ -99,20 +98,22 @@ project-root/
 │ │ │ ├── permission/
 │ │ │ │ └── PermissionManagementPage.tsx
 │ │ │ └── settings/
-│ │ │   └── SettingsPage.tsx
+│ │ │ └── SettingsPage.tsx
 │ │ ├── services/
-│ │ │ └── api.ts
+│ │ │ ├── api.ts
+│ │ │ └── auth.ts
+│ │ ├── styles/
+│ │ │ ├── tailwind.css
+│ │ │ ├── global.css
+│ │ │ └── theme.ts
 │ │ ├── utils/
 │ │ │ ├── errorHandler.ts
-│ │ │ ├── errorMessages.ts
 │ │ │ └── debounce.ts
-│ │ ├── styles/
-│ │ │ ├── animations.css
-│ │ │ └── global.css
 │ │ ├── App.tsx
 │ │ └── index.tsx
 │ ├── package.json
-│ └── tsconfig.json
+│ ├── tsconfig.json
+│ └── tailwind.config.js
 ├── backend/
 │ ├── src/
 │ │ ├── config/
@@ -143,8 +144,7 @@ project-root/
 ├── package.json
 ├── README.md
 ├── instruction.md
-├── currenttask.md
-└── test.md
+└── currenttask.md
 
 ## Data Type Definitions
 
@@ -220,4 +220,6 @@ project-root/
   "roleId": "UUID"
 }
 ```
+
+
 

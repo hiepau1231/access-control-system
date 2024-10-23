@@ -1,105 +1,90 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Table, Input, Button, Space, Row, Col } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
-import { getUsers, getRoles, deleteUser } from '../../services/api';
-import { handleError, showSuccess } from '../../utils/errorHandler';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Table, Input, message, Space, Modal, Form } from 'antd';
+import { UserAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { getUsers, createUser, updateUser, deleteUser } from '../../services/api';
 import { debounce } from '../../utils/debounce';
-import LoadingIndicator from '../common/LoadingIndicator';
-import '../../styles/animations.css'
-
-const { Search } = Input;
+import Button from '../common/Button';
 
 interface User {
   id: string;
   username: string;
   email: string;
-  roleId: string;
+  role: string;
 }
 
-interface Role {
-  id: string;
-  name: string;
-}
-
-const UserManagement: React.FC = React.memo(() => {
+const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-  const [searchText, setSearchText] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [form] = Form.useForm();
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
-  const fetchUsers = async (page: number = 1, limit: number = 10, search: string = '') => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await getUsers(page, limit, search);
-      setUsers(response.users);
-      setPagination({
-        ...pagination,
-        current: response.currentPage,
-        total: response.total,
-      });
+      const data = await getUsers();
+      setUsers(data);
     } catch (error) {
-      handleError(error);
+      message.error('Failed to fetch users');
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchRoles = async () => {
-    try {
-      const response = await getRoles();
-      setRoles(response.roles);
-    } catch (error) {
-      handleError(error);
-    }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
-    fetchRoles();
-  }, []);
-
-  const handleTableChange = (pagination: any) => {
-    fetchUsers(pagination.current, pagination.pageSize, searchText);
-  };
+  }, [fetchUsers]);
 
   const debouncedSearch = debounce((value: string) => {
-    setSearchText(value);
-    fetchUsers(1, pagination.pageSize, value);
+    // Implement search logic here
+    console.log('Searching for:', value);
   }, 300);
 
-  const handleSearch = (value: string) => {
-    debouncedSearch(value);
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    debouncedSearch(e.target.value);
   };
 
-  const handleEdit = useCallback((record: User) => {
-    console.log('Edit user:', record);
-  }, []);
+  const showModal = (user?: User) => {
+    if (user) {
+      setEditingUserId(user.id);
+      form.setFieldsValue(user);
+    } else {
+      setEditingUserId(null);
+      form.resetFields();
+    }
+    setIsModalVisible(true);
+  };
 
-  const handleDelete = useCallback(async (id: string) => {
-    setActionLoading(true);
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      if (editingUserId) {
+        await updateUser(editingUserId, values);
+        message.success('User updated successfully');
+      } else {
+        await createUser(values);
+        message.success('User created successfully');
+      }
+      setIsModalVisible(false);
+      fetchUsers();
+    } catch (error) {
+      message.error('Failed to save user');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
     try {
       await deleteUser(id);
-      showSuccess('User deleted successfully');
-      setUsers(prevUsers => prevUsers.filter(user => user.id !== id));
-      const userElement = document.getElementById(`user-${id}`);
-      if (userElement) {
-        userElement.classList.add('fade-out');
-        setTimeout(() => {
-          fetchUsers(pagination.current, pagination.pageSize, searchText);
-        }, 500);
-      } else {
-        fetchUsers(pagination.current, pagination.pageSize, searchText);
-      }
+      message.success('User deleted successfully');
+      fetchUsers();
     } catch (error) {
-      handleError(error);
-    } finally {
-      setActionLoading(false);
+      message.error('Failed to delete user');
     }
-  }, [fetchUsers, pagination.current, pagination.pageSize, searchText]);
+  };
 
-  const columns = useMemo(() => [
+  const columns = [
     {
       title: 'Username',
       dataIndex: 'username',
@@ -112,56 +97,73 @@ const UserManagement: React.FC = React.memo(() => {
     },
     {
       title: 'Role',
-      dataIndex: 'roleId',
-      key: 'roleId',
-      render: (roleId: string) => {
-        const role = roles.find((r: Role) => r.id === roleId);
-        return role ? role.name : 'N/A';
-      },
+      dataIndex: 'role',
+      key: 'role',
     },
     {
-      title: 'Action',
-      key: 'action',
-      render: (_: any, record: User) => (
+      title: 'Actions',
+      key: 'actions',
+      render: (text: string, record: User) => (
         <Space size="middle">
-          <Button onClick={() => handleEdit(record)}>Edit</Button>
-          <Button onClick={() => handleDelete(record.id)} danger>
-            Delete
-          </Button>
+          <Button icon={<EditOutlined />} onClick={() => showModal(record)}>Edit</Button>
+          <Button icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} danger>Delete</Button>
         </Space>
       ),
     },
-  ], [roles]); // Only re-create columns when roles change
+  ];
 
   return (
-    <LoadingIndicator loading={actionLoading}>
-      <div role="region" aria-label="User Management" className="fade-in">
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={24} md={12} lg={8} xl={6}>
-            <h1 id="user-management-title">User Management</h1>
-          </Col>
-          <Col xs={24} sm={24} md={12} lg={16} xl={18}>
-            <Search
-              placeholder="Search users"
-              onSearch={handleSearch}
-              style={{ width: '100%' }}
-              aria-label="Search users"
-            />
-          </Col>
-        </Row>
-        <Table
-          columns={columns}
-          dataSource={users}
-          rowKey="id"
-          pagination={pagination}
-          loading={loading}
-          onChange={handleTableChange}
-          scroll={{ x: true }}
-          aria-labelledby="user-management-title"
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+        <Input.Search
+          placeholder="Search users"
+          value={searchTerm}
+          onChange={handleSearch}
+          className="w-full sm:w-64 mb-4 sm:mb-0"
         />
+        <Button
+          variant="primary"
+          icon={<UserAddOutlined />}
+          onClick={() => showModal()}
+          className="w-full sm:w-auto"
+        >
+          Add User
+        </Button>
       </div>
-    </LoadingIndicator>
+      <Table<User>
+        columns={columns}
+        dataSource={users}
+        loading={loading}
+        rowKey="id"
+        pagination={{
+          total: users.length,
+          pageSize: 10,
+          showSizeChanger: false,
+        }}
+        scroll={{ x: 'max-content' }}
+      />
+      <Modal
+        title={editingUserId ? "Edit User" : "Add User"}
+        visible={isModalVisible}
+        onOk={handleOk}
+        onCancel={() => setIsModalVisible(false)}
+        width="95%"
+        style={{ maxWidth: '500px' }}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="username" label="Username" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
   );
-});
+};
 
 export default UserManagement;

@@ -1,0 +1,21 @@
+.managementContainer {
+  background: #fff;
+  padding: 24px;
+  min-height: 360px;
+  border-radius: 2px;
+}
+
+.tableActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.searchInput {
+  width: 200px;
+}
+
+.addButton {
+  margin-left: 16px;
+}
