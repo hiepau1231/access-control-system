@@ -1,203 +1,131 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Space, Button, Modal, Form, Input, Select, message } from 'antd';
-import { getPermissions, createPermission, updatePermission, deletePermission, getRoles, assignPermissionToRole, removePermissionFromRole } from '../../services/api';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Table, Input, Button, Space, Row, Col } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { getPermissions, deletePermission } from '../../services/api';
+import { handleError, showSuccess } from '../../utils/errorHandler';
+import { debounce } from '../../utils/debounce';
+import LoadingIndicator from '../common/LoadingIndicator';
+import '../../styles/animations.css';
 
-const { Option } = Select;
 const { Search } = Input;
 
+interface Permission {
+  id: string;
+  name: string;
+  description: string;
+}
+
 const PermissionManagement: React.FC = React.memo(() => {
-  const [permissions, setPermissions] = useState([]);
-  const [roles, setRoles] = useState([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [form] = Form.useForm();
-  const [editingPermissionId, setEditingPermissionId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
 
-  const fetchPermissions = useCallback(async () => {
+  const fetchPermissions = useCallback(async (page: number = 1, limit: number = 10, search: string = '') => {
     setLoading(true);
     try {
-      const response = await getPermissions();
-      setPermissions(response.data);
-      setPagination(prev => ({ ...prev, total: response.data.length }));
+      const response = await getPermissions(page, limit, search);
+      setPermissions(response.permissions);
+      setPagination({
+        ...pagination,
+        current: response.currentPage,
+        total: response.total,
+      });
     } catch (error) {
-      message.error('Không thể tải danh sách quyền. Vui lòng thử lại sau.');
-      console.error('Error fetching permissions:', error);
+      handleError(error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const memoizedFetchPermissions = useCallback(() => {
+  useEffect(() => {
     fetchPermissions();
   }, [fetchPermissions]);
 
-  const fetchRoles = useCallback(async () => {
-    try {
-      const response = await getRoles();
-      setRoles(response.data);
-    } catch (error) {
-      message.error('Không thể tải danh sách vai trò. Vui lòng thử lại sau.');
-      console.error('Error fetching roles:', error);
-    }
+  const handleTableChange = useCallback((pagination: any) => {
+    fetchPermissions(pagination.current, pagination.pageSize, searchText);
+  }, [fetchPermissions, searchText]);
+
+  const debouncedSearch = useMemo(
+    () => debounce((value: string) => {
+      setSearchText(value);
+      fetchPermissions(1, pagination.pageSize, value);
+    }, 300),
+    [fetchPermissions, pagination.pageSize]
+  );
+
+  const handleSearch = useCallback((value: string) => {
+    debouncedSearch(value);
+  }, [debouncedSearch]);
+
+  const handleEdit = useCallback((record: Permission) => {
+    // Implement edit functionality
+    console.log('Edit permission:', record);
   }, []);
 
-  useEffect(() => {
-    fetchRoles();
-  }, [fetchRoles]);
-
-  const handleCreate = () => {
-    setEditingPermissionId(null);
-    form.resetFields();
-    setModalVisible(true);
-  };
-
-  const handleEdit = (record: any) => {
-    setEditingPermissionId(record.id);
-    form.setFieldsValue(record);
-    setModalVisible(true);
-  };
-
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       await deletePermission(id);
-      message.success('Xóa quyền thành công');
-      fetchPermissions();
+      showSuccess('Permission deleted successfully');
+      fetchPermissions(pagination.current, pagination.pageSize, searchText);
     } catch (error) {
-      message.error('Không thể xóa quyền. Vui lòng thử lại sau.');
-      console.error('Error deleting permission:', error);
+      handleError(error);
     }
-  };
+  }, [fetchPermissions, pagination.current, pagination.pageSize, searchText]);
 
-  const handleModalOk = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editingPermissionId) {
-        await updatePermission(editingPermissionId, values);
-        message.success('Cập nhật quyền thành công');
-      } else {
-        await createPermission(values);
-        message.success('Tạo quyền mới thành công');
-      }
-      setModalVisible(false);
-      form.resetFields();
-      fetchPermissions();
-    } catch (error) {
-      if (error instanceof Error) {
-        message.error(`Không thể lưu quyền: ${error.message}`);
-      } else {
-        message.error('Không thể lưu quyền. Vui lòng thử lại sau.');
-      }
-      console.error('Error saving permission:', error);
-    }
-  };
-
-  const handleAssignToRole = async (permissionId: string, roleId: string) => {
-    try {
-      await assignPermissionToRole(roleId, permissionId);
-      message.success('Gán quyền cho vai trò thành công');
-    } catch (error) {
-      message.error('Không thể gán quyền cho vai trò. Vui lòng thử lại sau.');
-      console.error('Error assigning permission to role:', error);
-    }
-  };
-
-  const handleRemoveFromRole = async (permissionId: string, roleId: string) => {
-    try {
-      await removePermissionFromRole(roleId, permissionId);
-      message.success('Gỡ bỏ quyền khỏi vai trò thành công');
-    } catch (error) {
-      message.error('Không thể gỡ bỏ quyền khỏi vai trò. Vui lòng thử lại sau.');
-      console.error('Error removing permission from role:', error);
-    }
-  };
-
-  const columns = [
+  const columns = useMemo(() => [
     {
-      title: 'Tên',
+      title: 'Name',
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Mô tả',
+      title: 'Description',
       dataIndex: 'description',
       key: 'description',
     },
     {
-      title: 'Hành động',
+      title: 'Action',
       key: 'action',
-      render: (_: any, record: any) => (
+      render: (_: any, record: Permission) => (
         <Space size="middle">
-          <Button onClick={() => handleEdit(record)}>Sửa</Button>
+          <Button onClick={() => handleEdit(record)}>Edit</Button>
           <Button onClick={() => handleDelete(record.id)} danger>
-            Xóa
+            Delete
           </Button>
-          <Select
-            style={{ width: 200 }}
-            placeholder="Gán cho vai trò"
-            onChange={(roleId) => handleAssignToRole(record.id, roleId)}
-          >
-            {roles.map((role: any) => (
-              <Option key={role.id} value={role.id}>{role.name}</Option>
-            ))}
-          </Select>
         </Space>
       ),
     },
-  ];
-
-  const handleTableChange = (pagination: any) => {
-    setPagination(pagination);
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchText(value);
-    setPagination(prev => ({ ...prev, current: 1 }));
-  };
+  ], [handleEdit, handleDelete]);
 
   return (
-    <div>
-      <Search
-        placeholder="Tìm kiếm quyền"
-        onSearch={handleSearch}
-        style={{ marginBottom: 16 }}
-      />
-      <Button onClick={handleCreate} type="primary" style={{ marginBottom: 16 }}>
-        Tạo quyền mới
-      </Button>
-      <Table
-        columns={columns}
-        dataSource={permissions}
-        rowKey="id"
-        loading={loading}
-        pagination={pagination}
-        onChange={handleTableChange}
-      />
-      <Modal
-        title={editingPermissionId ? "Sửa quyền" : "Tạo quyền mới"}
-        visible={modalVisible}
-        onOk={handleModalOk}
-        onCancel={() => setModalVisible(false)}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label="Tên"
-            rules={[{ required: true, message: 'Vui lòng nhập tên quyền!' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="Mô tả"
-            rules={[{ required: true, message: 'Vui lòng nhập mô tả quyền!' }]}
-          >
-            <Input.TextArea />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+    <LoadingIndicator loading={loading}>
+      <div role="region" aria-label="Permission Management" className="fade-in">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={24} md={12} lg={8} xl={6}>
+            <h1 id="permission-management-title">Permission Management</h1>
+          </Col>
+          <Col xs={24} sm={24} md={12} lg={16} xl={18}>
+            <Search
+              placeholder="Search permissions"
+              onSearch={handleSearch}
+              style={{ width: '100%' }}
+              aria-label="Search permissions"
+            />
+          </Col>
+        </Row>
+        <Table
+          columns={columns}
+          dataSource={permissions}
+          rowKey="id"
+          pagination={pagination}
+          loading={loading}
+          onChange={handleTableChange}
+          scroll={{ x: true }}
+          aria-labelledby="permission-management-title"
+        />
+      </div>
+    </LoadingIndicator>
   );
 });
 

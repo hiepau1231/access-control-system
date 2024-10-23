@@ -1,12 +1,12 @@
 import express from 'express';
 import { UserController } from '../controllers/UserController';
-import { authenticateToken } from '../middleware/authMiddleware';
+import { checkPermission } from '../middleware/checkPermission';
 
 const router = express.Router();
 
-router.get('/', authenticateToken, UserController.getAllUsers);
-router.get('/:id', authenticateToken, UserController.getUserById);
-router.put('/:id', authenticateToken, UserController.updateUser);
-router.delete('/:id', authenticateToken, UserController.deleteUser);
+router.get('/', checkPermission('VIEW_USERS'), UserController.getAllUsers);
+router.get('/:id', checkPermission('VIEW_USERS'), UserController.getUserById);
+router.put('/:id', checkPermission('EDIT_USERS'), UserController.updateUser);
+router.delete('/:id', checkPermission('DELETE_USERS'), UserController.deleteUser);
 
 export default router;

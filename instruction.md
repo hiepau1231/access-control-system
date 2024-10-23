@@ -80,8 +80,11 @@ project-root/
 │ │ │ │ └── UserManagement.tsx
 │ │ │ ├── role/
 │ │ │ │ └── RoleManagement.tsx
-│ │ │ └── permission/
-│ │ │   └── PermissionManagement.tsx
+│ │ │ ├── permission/
+│ │ │ │ └── PermissionManagement.tsx
+│ │ │ └── common/
+│ │ │   ├── LoadingIndicator.tsx
+│ │ │   └── Navigation.tsx
 │ │ ├── pages/
 │ │ │ ├── dashboard/
 │ │ │ │ └── DashboardPage.tsx
@@ -103,7 +106,11 @@ project-root/
 │ │ │ ├── errorHandler.ts
 │ │ │ ├── errorMessages.ts
 │ │ │ └── debounce.ts
-│ │ └── App.tsx
+│ │ ├── styles/
+│ │ │ ├── animations.css
+│ │ │ └── global.css
+│ │ ├── App.tsx
+│ │ └── index.tsx
 │ ├── package.json
 │ └── tsconfig.json
 ├── backend/
@@ -116,7 +123,8 @@ project-root/
 │ │ │ ├── RoleController.ts
 │ │ │ └── PermissionController.ts
 │ │ ├── middleware/
-│ │ │ └── authMiddleware.ts
+│ │ │ ├── authMiddleware.ts
+│ │ │ └── checkPermission.ts
 │ │ ├── models/
 │ │ │ ├── User.ts
 │ │ │ ├── Role.ts

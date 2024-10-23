@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PermissionModel, Permission } from '../models/Permission';
 import { Op } from 'sequelize';
+import { cache } from '../utils/cache';
 
 export class PermissionController {
   static async getAllPermissions(req: Request, res: Response) {
@@ -94,6 +95,13 @@ export class PermissionController {
   static async getPermissions(req: Request, res: Response) {
     try {
       const { page = 1, limit = 10, search } = req.query;
+      const cacheKey = `permissions_${page}_${limit}_${search}`;
+      const cachedPermissions = cache.get(cacheKey);
+
+      if (cachedPermissions) {
+        return res.json(cachedPermissions);
+      }
+
       const offset = (Number(page) - 1) * Number(limit);
 
       let whereClause = {};
@@ -112,12 +120,16 @@ export class PermissionController {
         offset: offset
       });
 
-      res.json({
+      const result = {
         total: permissions.count,
         permissions: permissions.rows,
         currentPage: Number(page),
         totalPages: Math.ceil(permissions.count / Number(limit))
-      });
+      };
+
+      cache.set(cacheKey, result, 300); // Cache for 5 minutes
+
+      res.json(result);
     } catch (error) {
       console.error('Error fetching permissions:', error);
       res.status(500).json({ message: 'Internal server error' });

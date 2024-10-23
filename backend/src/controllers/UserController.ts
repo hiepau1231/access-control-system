@@ -3,11 +3,19 @@ import { User } from '../models/User';
 import { Op } from 'sequelize';
 import bcrypt from 'bcrypt';
 import { decrypt } from '../utils/encryption';
+import { cache } from '../utils/cache';
 
 export class UserController {
   static async getAllUsers(req: Request, res: Response) {
     try {
       const { page = 1, limit = 10, search } = req.query;
+      const cacheKey = `users_${page}_${limit}_${search}`;
+      const cachedUsers = cache.get(cacheKey);
+
+      if (cachedUsers) {
+        return res.json(cachedUsers);
+      }
+
       const offset = (Number(page) - 1) * Number(limit);
 
       let whereClause = {};
@@ -27,12 +35,16 @@ export class UserController {
         attributes: ['id', 'username', 'email', 'roleId']
       });
 
-      res.json({
+      const result = {
         total: users.count,
         users: users.rows,
         currentPage: Number(page),
         totalPages: Math.ceil(users.count / Number(limit))
-      });
+      };
+
+      cache.set(cacheKey, result, 300); // Cache for 5 minutes
+
+      res.json(result);
     } catch (error) {
       console.error('Error fetching users:', error);
       res.status(500).json({ message: 'Internal server error' });

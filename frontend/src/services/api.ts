@@ -21,6 +21,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response && error.response.status === 401) {
+      // Redirect to login page or refresh token
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
     handleError(error);
     return Promise.reject(error);
   }
@@ -33,7 +38,7 @@ export const register = (username: string, password: string, email: string) =>
   api.post('/auth/register', { username, password, email });
 
 export const getUsers = async (page: number = 1, limit: number = 10, search: string = '') => {
-  const response = await axios.get(`/api/users?page=${page}&limit=${limit}&search=${search}`);
+  const response = await api.get(`/users?page=${page}&limit=${limit}&search=${search}`);
   return response.data;
 };
 
@@ -60,7 +65,7 @@ export const updateRole = (id: string, data: any) => api.put(`/roles/${id}`, dat
 export const deleteRole = (id: string) => api.delete(`/roles/${id}`);
 
 export const getPermissions = async (page: number = 1, limit: number = 10, search: string = '') => {
-  const response = await axios.get(`/api/permissions?page=${page}&limit=${limit}&search=${search}`);
+  const response = await api.get(`/permissions?page=${page}&limit=${limit}&search=${search}`);
   return response.data;
 };
 
@@ -80,5 +85,8 @@ export const removePermissionFromRole = (roleId: string, permissionId: string) =
 
 export const getPermissionsForRole = (roleId: string) =>
   api.get(`/permissions/role/${roleId}`);
+
+export const assignPermissionsToRole = (roleId: string, permissionIds: string[]) =>
+  api.post('/roles/assign-permissions', { roleId, permissionIds });
 
 export default api;

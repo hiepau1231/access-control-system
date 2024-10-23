@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Input, Button, Space } from 'antd';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Table, Input, Button, Space, Row, Col } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { getUsers, getRoles, deleteUser } from '../../services/api';
 import { handleError, showSuccess } from '../../utils/errorHandler';
 import { debounce } from '../../utils/debounce';
+import LoadingIndicator from '../common/LoadingIndicator';
+import '../../styles/animations.css'
 
 const { Search } = Input;
 
@@ -19,12 +21,13 @@ interface Role {
   name: string;
 }
 
-const UserManagement: React.FC = () => {
+const UserManagement: React.FC = React.memo(() => {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchUsers = async (page: number = 1, limit: number = 10, search: string = '') => {
     setLoading(true);
@@ -70,22 +73,33 @@ const UserManagement: React.FC = () => {
     debouncedSearch(value);
   };
 
-  const handleEdit = (record: User) => {
-    // Implement edit functionality
+  const handleEdit = useCallback((record: User) => {
     console.log('Edit user:', record);
-  };
+  }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
+    setActionLoading(true);
     try {
       await deleteUser(id);
       showSuccess('User deleted successfully');
-      fetchUsers(pagination.current, pagination.pageSize, searchText);
+      setUsers(prevUsers => prevUsers.filter(user => user.id !== id));
+      const userElement = document.getElementById(`user-${id}`);
+      if (userElement) {
+        userElement.classList.add('fade-out');
+        setTimeout(() => {
+          fetchUsers(pagination.current, pagination.pageSize, searchText);
+        }, 500);
+      } else {
+        fetchUsers(pagination.current, pagination.pageSize, searchText);
+      }
     } catch (error) {
       handleError(error);
+    } finally {
+      setActionLoading(false);
     }
-  };
+  }, [fetchUsers, pagination.current, pagination.pageSize, searchText]);
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       title: 'Username',
       dataIndex: 'username',
@@ -117,26 +131,37 @@ const UserManagement: React.FC = () => {
         </Space>
       ),
     },
-  ];
+  ], [roles]); // Only re-create columns when roles change
 
   return (
-    <div>
-      <h1>User Management</h1>
-      <Search
-        placeholder="Search users"
-        onSearch={handleSearch}
-        style={{ width: 200, marginBottom: 16 }}
-      />
-      <Table
-        columns={columns}
-        dataSource={users}
-        rowKey="id"
-        pagination={pagination}
-        loading={loading}
-        onChange={handleTableChange}
-      />
-    </div>
+    <LoadingIndicator loading={actionLoading}>
+      <div role="region" aria-label="User Management" className="fade-in">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={24} md={12} lg={8} xl={6}>
+            <h1 id="user-management-title">User Management</h1>
+          </Col>
+          <Col xs={24} sm={24} md={12} lg={16} xl={18}>
+            <Search
+              placeholder="Search users"
+              onSearch={handleSearch}
+              style={{ width: '100%' }}
+              aria-label="Search users"
+            />
+          </Col>
+        </Row>
+        <Table
+          columns={columns}
+          dataSource={users}
+          rowKey="id"
+          pagination={pagination}
+          loading={loading}
+          onChange={handleTableChange}
+          scroll={{ x: true }}
+          aria-labelledby="user-management-title"
+        />
+      </div>
+    </LoadingIndicator>
   );
-};
+});
 
 export default UserManagement;
