@@ -35,35 +35,46 @@ const Navigation: React.FC<NavigationProps> = ({ isDarkMode, toggleDarkMode }) =
       <div className="p-4">
         <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Your Logo</h2>
       </div>
-      <ul className="mt-8">
-        {items.map((item) => (
-          <li key={item.key} className="mb-2">
-            <Link
-              to={item.path}
-              className={`flex items-center px-4 py-2 ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`}
-              onClick={() => setIsDrawerVisible(false)}
+      <nav>
+        <ul className="mt-8" role="menu">
+          {items.map((item) => (
+            <li key={item.key} className="mb-2" role="none">
+              <Link
+                to={item.path}
+                className={`flex items-center px-4 py-2 ${
+                  isDarkMode 
+                    ? 'text-gray-300 hover:bg-gray-700' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                onClick={() => setIsDrawerVisible(false)}
+                role="menuitem"
+              >
+                {item.icon}
+                <span className="ml-2">{item.label}</span>
+              </Link>
+            </li>
+          ))}
+          <li className="mb-2" role="none">
+            <a
+              onClick={() => { logout(); setIsDrawerVisible(false); }}
+              className={`flex items-center px-4 py-2 cursor-pointer ${
+                isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              role="menuitem"
             >
-              {item.icon}
-              <span className="ml-2">{item.label}</span>
-            </Link>
+              <LogoutOutlined />
+              <span className="ml-2">Logout</span>
+            </a>
           </li>
-        ))}
-        <li className="mb-2">
-          <a
-            onClick={() => { logout(); setIsDrawerVisible(false); }}
-            className={`flex items-center px-4 py-2 cursor-pointer ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            <LogoutOutlined />
-            <span className="ml-2">Logout</span>
-          </a>
-        </li>
-      </ul>
+        </ul>
+      </nav>
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
         <Switch
           checkedChildren={<BulbOutlined />}
           unCheckedChildren={<BulbOutlined />}
           checked={isDarkMode}
           onChange={toggleDarkMode}
+          aria-label="Toggle dark mode"
         />
       </div>
     </>
@@ -71,7 +82,9 @@ const Navigation: React.FC<NavigationProps> = ({ isDarkMode, toggleDarkMode }) =
 
   return (
     <>
-      <nav className={`hidden lg:block h-screen w-64 fixed left-0 top-0 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+      <nav className={`hidden lg:block h-screen w-64 fixed left-0 top-0 ${
+        isDarkMode ? 'bg-gray-800' : 'bg-white'
+      } shadow-lg`}>
         <NavContent />
       </nav>
       <div className="lg:hidden">

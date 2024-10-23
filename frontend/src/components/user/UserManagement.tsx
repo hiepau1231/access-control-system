@@ -4,6 +4,7 @@ import { UserAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons
 import { getUsers, createUser, updateUser, deleteUser } from '../../services/api';
 import { debounce } from '../../utils/debounce';
 import Button from '../common/Button';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface User {
   id: string;
@@ -13,6 +14,7 @@ interface User {
 }
 
 const UserManagement: React.FC = () => {
+  const { isDarkMode } = useTheme();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,13 +115,13 @@ const UserManagement: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+    <div className={`p-4 sm:p-6 rounded-lg shadow-md ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
         <Input.Search
           placeholder="Search users"
           value={searchTerm}
           onChange={handleSearch}
-          className="w-full sm:w-64 mb-4 sm:mb-0"
+          className={`w-full sm:w-64 mb-4 sm:mb-0 ${isDarkMode ? 'bg-gray-700 text-white' : ''}`}
         />
         <Button
           variant="primary"
@@ -141,6 +143,7 @@ const UserManagement: React.FC = () => {
           showSizeChanger: false,
         }}
         scroll={{ x: 'max-content' }}
+        className={isDarkMode ? 'ant-table-dark' : ''}
       />
       <Modal
         title={editingUserId ? "Edit User" : "Add User"}

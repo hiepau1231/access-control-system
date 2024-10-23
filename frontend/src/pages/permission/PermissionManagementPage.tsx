@@ -1,44 +1,13 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Input, message, Space, Modal, Form } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { getPermissions, createPermission, updatePermission, deletePermission } from '../../services/api';
-import { debounce } from '../../utils/debounce';
-import Button from '../../components/common/Button';
-import VirtualTable from '../../components/common/VirtualTable';
+import React from 'react';
+import { Table, Button } from 'antd';
+import { useTheme } from '../../contexts/ThemeContext';
 
-interface Permission {
-  id: string;
-  name: string;
-  description: string;
-}
+const PermissionManagementPage: React.FC = () => {
+  const { isDarkMode } = useTheme();
 
-const PermissionManagement: React.FC = () => {
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
-  const [editingPermissionId, setEditingPermissionId] = useState<string | null>(null);
-
-  const fetchPermissions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getPermissions();
-      setPermissions(Array.isArray(data) ? data : []);
-    } catch (error) {
-      message.error('Failed to fetch permissions');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPermissions();
-  }, [fetchPermissions]);
-
-  const columns = useMemo(() => [
+  const columns = [
     {
-      title: 'Name',
+      title: 'Permission Name',
       dataIndex: 'name',
       key: 'name',
     },
@@ -50,71 +19,31 @@ const PermissionManagement: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      render: (text: string, record: Permission) => (
-        <Space size="middle">
-          <Button icon={<EditOutlined />} onClick={() => showModal(record)}>Edit</Button>
-          <Button icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} danger>Delete</Button>
-        </Space>
+      render: () => (
+        <Button type="primary">Edit</Button>
       ),
     },
-  ], []);
+  ];
 
-  const showModal = (permission?: Permission) => {
-    if (permission) {
-      setEditingPermissionId(permission.id);
-      form.setFieldsValue(permission);
-    } else {
-      setEditingPermissionId(null);
-      form.resetFields();
-    }
-    setIsModalVisible(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await deletePermission(id);
-      message.success('Permission deleted successfully');
-      fetchPermissions();
-    } catch (error) {
-      message.error('Failed to delete permission');
-    }
-  };
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    // Implement search logic here
-  };
-
-  // ... (rest of the component logic)
+  const data = [
+    {
+      key: '1',
+      name: 'Create User',
+      description: 'Allows creating new users',
+    },
+    // Add more mock data as needed
+  ];
 
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-        <Input.Search
-          placeholder="Search permissions"
-          value={searchTerm}
-          onChange={handleSearch}
-          className="w-full sm:w-64 mb-4 sm:mb-0"
-        />
-        <Button
-          variant="primary"
-          icon={<PlusOutlined />}
-          onClick={() => showModal()}
-          className="w-full sm:w-auto"
-        >
-          Add Permission
-        </Button>
-      </div>
-      <VirtualTable
-        columns={columns}
-        dataSource={permissions}
-        loading={loading}
-        rowKey="id"
-        scroll={{ y: 400 }}
+    <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`}>
+      <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Permission Management</h1>
+      <Table 
+        columns={columns} 
+        dataSource={data} 
+        className={isDarkMode ? 'ant-table-dark' : ''}
       />
-      {/* Modal code */}
     </div>
   );
 };
 
-export default PermissionManagement;
+export default PermissionManagementPage;

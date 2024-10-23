@@ -4,11 +4,30 @@ This project is a web-based system that provides role-based access control (RBAC
 
 ## Technologies Used
 
-- Frontend: React (TypeScript), Ant Design (AntD), TailwindCSS
-- Backend: Node.js, Express.js
+- Frontend:
+  - React (TypeScript)
+  - Ant Design (AntD)
+  - TailwindCSS
+  - React Router
+- Backend:
+  - Node.js
+  - Express.js
 - Database: SQLite
 - ORM: Sequelize
 - Authentication: JSON Web Tokens (JWT)
+- State Management: React Context API
+- Styling: Combination of Ant Design components and custom TailwindCSS
+
+## Features
+
+- Role-based access control (RBAC)
+- User management
+- Role management
+- Permission management
+- Dark mode support
+- Responsive design
+- Secure authentication using JWT
+- Data encryption for sensitive information
 
 ## Prerequisites
 
@@ -81,6 +100,8 @@ The frontend application should now be running on `http://localhost:3000`.
 2. You can log in with the default admin account:
    - Username: admin
    - Password: admin123
+3. Explore the different sections: Dashboard, User Management, Role Management, and Permission Management
+4. Try out the dark mode feature in the Settings page
 
 ## Running Tests
 

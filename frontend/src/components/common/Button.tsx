@@ -1,33 +1,92 @@
 import React from 'react';
+
+
+
 import { Button as AntButton } from 'antd';
+
+
+
 import { ButtonProps as AntButtonProps } from 'antd/lib/button';
 
-interface CustomButtonProps extends Omit<AntButtonProps, 'type'> {
-  variant?: 'primary' | 'secondary' | 'danger';
-  type?: 'button' | 'submit' | 'reset';
-}
 
-const Button: React.FC<CustomButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  className = '', 
-  type = 'button',
-  ...props 
+
+
+
+
+
+type ButtonVariant = 'primary' | 'secondary' | 'danger';
+
+
+
+
+
+
+
+type CustomButtonProps = Omit<AntButtonProps, 'type' | 'variant'> & {
+  variant?: ButtonVariant;
+  htmlType?: 'button' | 'submit' | 'reset';
+};
+
+
+
+
+
+
+
+const Button: React.FC<CustomButtonProps> = ({
+  variant = 'primary',
+  htmlType = 'button',
+  children,
+  ...props
 }) => {
-  const baseClasses = 'font-semibold py-2 px-4 rounded transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-opacity-50';
-  const variantClasses = {
-    primary: 'bg-blue-500 hover:bg-blue-600 text-white focus:ring-blue-500',
-    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-800 focus:ring-gray-500',
-    danger: 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500',
-  };
+  let buttonType: AntButtonProps['type'];
+  let className = '';
 
-  const buttonClasses = `${baseClasses} ${variantClasses[variant]} ${className}`;
+  switch (variant) {
+    case 'secondary':
+      buttonType = 'default';
+      className = 'bg-gray-200 text-gray-800 hover:bg-gray-300';
+      break;
+    case 'danger':
+      buttonType = 'primary';
+      className = 'bg-red-500 text-white hover:bg-red-600';
+      break;
+    default:
+      buttonType = 'primary';
+      className = 'bg-blue-500 text-white hover:bg-blue-600';
+  }
+
+
+
+
+
+
 
   return (
-    <AntButton {...props} className={buttonClasses} htmlType={type}>
+    <AntButton
+      {...props}
+      type={buttonType}
+      danger={variant === 'danger'}
+      htmlType={htmlType}
+      className={`${className} px-4 py-2 rounded-md transition-colors duration-200 ${props.className || ''}`}
+    >
       {children}
     </AntButton>
   );
 };
 
+
+
+
+
+
+
 export default Button;
+
+
+
+
+
+
+
+

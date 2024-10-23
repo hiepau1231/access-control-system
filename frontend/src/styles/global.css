@@ -75,3 +75,94 @@ body, .ant-typography {
 .virtual-table-cell-hover {
   background: #e6f7ff;
 }
+
+/* Thêm vào cuối file */
+
+/* Đảm bảo scrollbar luôn hiển thị trên Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+/* Tùy chỉnh scrollbar cho Chrome, Edge, và Safari */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Đảm bảo các input và button có cùng font với phần còn lại của ứng dụng */
+input, button, select, textarea {
+  font-family: inherit;
+}
+
+/* Dark mode styles */
+.dark .ant-table {
+  background-color: #1f2937;
+  color: #e5e7eb;
+}
+
+.dark .ant-table-thead > tr > th {
+  background-color: #374151;
+  color: #e5e7eb;
+}
+
+.dark .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #4b5563;
+}
+
+.dark .ant-input {
+  background-color: #374151;
+  color: #e5e7eb;
+}
+
+.dark .ant-input-search-button {
+  background-color: #4b5563;
+  border-color: #4b5563;
+}
+
+.dark .ant-modal-content,
+.dark .ant-modal-header {
+  background-color: #1f2937;
+  color: #e5e7eb;
+}
+
+.dark .ant-modal-title {
+  color: #e5e7eb;
+}
+
+.dark .ant-form-item-label > label {
+  color: #e5e7eb;
+}
+
+/* Dark mode styles for Ant Design components */
+.ant-table-dark {
+  background-color: #1f2937;
+  color: #f3f4f6;
+}
+
+.ant-table-dark .ant-table-thead > tr > th {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+.ant-table-dark .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #4b5563;
+}
+
+.ant-table-dark .ant-table-tbody > tr:hover > td {
+  background-color: #374151;
+}
+
+/* Add more dark mode styles for other Ant Design components as needed */

@@ -1,23 +1,53 @@
 import React from 'react';
-import { Typography, Card } from 'antd';
-import UserManagement from '../../components/user/UserManagement';
-import { UserOutlined } from '@ant-design/icons';
-
-const { Title } = Typography;
+import { Table, Button } from 'antd';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const UserManagementPage: React.FC = () => {
+  const { isDarkMode } = useTheme();
+
+  const columns = [
+    {
+      title: 'Username',
+      dataIndex: 'username',
+      key: 'username',
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: 'Role',
+      dataIndex: 'role',
+      key: 'role',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: () => (
+        <Button type="primary">Edit</Button>
+      ),
+    },
+  ];
+
+  const data = [
+    {
+      key: '1',
+      username: 'john_doe',
+      email: 'john@example.com',
+      role: 'Admin',
+    },
+    // Add more mock data as needed
+  ];
+
   return (
-    <div className="container mx-auto p-6">
-      <Card className="mb-6">
-        <div className="flex items-center mb-4">
-          <UserOutlined className="text-3xl text-blue-500 mr-4" />
-          <Title level={2} className="m-0">Quản lý người dùng</Title>
-        </div>
-        <Typography.Text className="text-gray-500">
-          Quản lý thông tin và quyền truy cập của người dùng trong hệ thống
-        </Typography.Text>
-      </Card>
-      <UserManagement />
+    <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`}>
+      <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>User Management</h1>
+      <Table 
+        columns={columns} 
+        dataSource={data} 
+        className={isDarkMode ? 'ant-table-dark' : ''}
+      />
     </div>
   );
 };

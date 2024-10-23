@@ -1,75 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { Card, message, Modal, Input } from 'antd';
-import { enable2FA, verify2FA, disable2FA } from '../../services/api';
-import Button from '../../components/common/Button';
+import React from 'react';
+import { Form, Input, Button, Switch } from 'antd';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const SettingsPage: React.FC = () => {
-  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const { isDarkMode, toggleDarkMode } = useTheme();
 
-  useEffect(() => {
-    // Fetch user's 2FA status
-    // Update is2FAEnabled state
-  }, []);
-
-  const handle2FAToggle = async () => {
-    try {
-      if (is2FAEnabled) {
-        await disable2FA();
-        setIs2FAEnabled(false);
-        message.success('2FA has been disabled');
-      } else {
-        const response = await enable2FA();
-        setQrCodeUrl(response.qrCodeUrl);
-        setIsModalVisible(true);
-      }
-    } catch (error) {
-      message.error('Failed to toggle 2FA');
-    }
-  };
-
-  const handleVerify2FA = async () => {
-    try {
-      await verify2FA(verificationCode);
-      setIs2FAEnabled(true);
-      setIsModalVisible(false);
-      message.success('2FA has been enabled');
-    } catch (error) {
-      message.error('Failed to verify 2FA');
-    }
+  const onFinish = (values: any) => {
+    console.log('Success:', values);
   };
 
   return (
-    <div className="p-6">
-      <Card title="Security Settings" className="w-full max-w-md mx-auto">
-        <Button
-          variant={is2FAEnabled ? "secondary" : "primary"}
-          onClick={handle2FAToggle}
-          className="w-full mb-4"
+    <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`}>
+      <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Settings</h1>
+      <Form
+        name="settings"
+        onFinish={onFinish}
+        layout="vertical"
+        className={isDarkMode ? 'text-white' : ''}
+      >
+        <Form.Item
+          label="Site Name"
+          name="siteName"
+          rules={[{ required: true, message: 'Please input the site name!' }]}
         >
-          {is2FAEnabled ? 'Disable 2FA' : 'Enable 2FA'}
-        </Button>
+          <Input className={isDarkMode ? 'bg-gray-700 text-white' : ''} />
+        </Form.Item>
 
-        <Modal
-          title="Set up 2FA"
-          visible={isModalVisible}
-          onOk={handleVerify2FA}
-          onCancel={() => setIsModalVisible(false)}
-        >
-          <img src={qrCodeUrl} alt="2FA QR Code" className="mb-4 w-full" />
-          <Input
-            value={verificationCode}
-            onChange={(e) => setVerificationCode(e.target.value)}
-            placeholder="Enter verification code"
-            className="mb-4"
-          />
-          <Button variant="primary" onClick={handleVerify2FA} className="w-full">
-            Verify
+        <Form.Item label="Dark Mode">
+          <Switch checked={isDarkMode} onChange={toggleDarkMode} />
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit">
+            Save Settings
           </Button>
-        </Modal>
-      </Card>
+        </Form.Item>
+      </Form>
     </div>
   );
 };
