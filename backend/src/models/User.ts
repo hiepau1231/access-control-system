@@ -1,12 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcrypt';
 import { openDb } from '../config/database';
-import { encrypt, decrypt } from '../utils/encryption';
 
 export interface User {
   id: string;
   username: string;
-  password: string;
   email: string;
+  password: string;
   roleId: string;
 }
 
@@ -14,22 +14,21 @@ export class UserModel {
   static async create(user: Omit<User, 'id'>): Promise<User> {
     const db = await openDb();
     const id = uuidv4();
-    const encryptedEmail = encrypt(user.email);
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    
     await db.run(
-      'INSERT INTO users (id, username, password, email, roleId) VALUES (?, ?, ?, ?, ?)',
-      [id, user.username, user.password, encryptedEmail, user.roleId]
+      'INSERT INTO users (id, username, email, password, roleId) VALUES (?, ?, ?, ?, ?)',
+      [id, user.username, user.email, hashedPassword, user.roleId]
     );
+    
     await db.close();
-    return { id, ...user, email: encryptedEmail };
+    return { id, ...user, password: hashedPassword };
   }
 
   static async findByUsername(username: string): Promise<User | undefined> {
     const db = await openDb();
     const user = await db.get<User>('SELECT * FROM users WHERE username = ?', [username]);
     await db.close();
-    if (user) {
-      user.email = decrypt(user.email);
-    }
     return user;
   }
 
@@ -37,46 +36,33 @@ export class UserModel {
     const db = await openDb();
     const user = await db.get<User>('SELECT * FROM users WHERE id = ?', [id]);
     await db.close();
-    if (user) {
-      user.email = decrypt(user.email);
-    }
     return user;
   }
 
-  static async getAll(page: number, limit: number, search?: string): Promise<{ users: User[], total: number }> {
+  static async getAll(): Promise<User[]> {
     const db = await openDb();
-    const offset = (page - 1) * limit;
-    let query = 'SELECT * FROM users';
-    let countQuery = 'SELECT COUNT(*) as count FROM users';
-    const params = [];
-
-    if (search) {
-      query += ' WHERE username LIKE ? OR email LIKE ?';
-      countQuery += ' WHERE username LIKE ? OR email LIKE ?';
-      params.push(`%${search}%`, `%${search}%`);
-    }
-
-    query += ' LIMIT ? OFFSET ?';
-    params.push(limit, offset);
-
-    const users = await db.all<User[]>(query, params);
-    const [{ count }] = await db.all(countQuery, search ? [`%${search}%`, `%${search}%`] : []);
-
+    const users = await db.all<User[]>('SELECT * FROM users');
     await db.close();
-    return {
-      users: users.map(user => ({ ...user, email: decrypt(user.email) })),
-      total: count
-    };
+    return users;
   }
 
   static async update(id: string, updates: Partial<User>): Promise<void> {
     const db = await openDb();
-    const { username, password, email, roleId } = updates;
-    const encryptedEmail = email ? encrypt(email) : undefined;
-    await db.run(
-      'UPDATE users SET username = ?, password = ?, email = ?, roleId = ? WHERE id = ?',
-      [username, password, encryptedEmail, roleId, id]
-    );
+    const { username, email, password, roleId } = updates;
+    
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await db.run(
+        'UPDATE users SET username = ?, email = ?, password = ?, roleId = ? WHERE id = ?',
+        [username, email, hashedPassword, roleId, id]
+      );
+    } else {
+      await db.run(
+        'UPDATE users SET username = ?, email = ?, roleId = ? WHERE id = ?',
+        [username, email, roleId, id]
+      );
+    }
+    
     await db.close();
   }
 
@@ -84,5 +70,9 @@ export class UserModel {
     const db = await openDb();
     await db.run('DELETE FROM users WHERE id = ?', [id]);
     await db.close();
+  }
+
+  static async comparePassword(user: User, candidatePassword: string): Promise<boolean> {
+    return bcrypt.compare(candidatePassword, user.password);
   }
 }

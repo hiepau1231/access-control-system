@@ -1,17 +1,33 @@
 import express from 'express';
 import { PermissionController } from '../controllers/PermissionController';
-import { authenticateToken } from '../middleware/authMiddleware';
+import { authMiddleware } from '../middleware/authMiddleware';
+import { checkPermission } from '../middleware/checkPermission';
 
 const router = express.Router();
+const permissionController = new PermissionController();
 
-router.get('/', authenticateToken, PermissionController.getAllPermissions);
-router.get('/:id', authenticateToken, PermissionController.getPermissionById);
-router.post('/', authenticateToken, PermissionController.createPermission);
-router.put('/:id', authenticateToken, PermissionController.updatePermission);
-router.delete('/:id', authenticateToken, PermissionController.deletePermission);
+router.get('/', 
+  authMiddleware,
+  checkPermission('read:permissions'),
+  (req, res) => permissionController.getAllPermissions(req, res)
+);
 
-router.post('/assign', authenticateToken, PermissionController.assignPermissionToRole);
-router.post('/remove', authenticateToken, PermissionController.removePermissionFromRole);
-router.get('/role/:roleId', authenticateToken, PermissionController.getPermissionsForRole);
+router.get('/:id', 
+  authMiddleware,
+  checkPermission('read:permissions'),
+  (req, res) => permissionController.getPermissionById(req, res)
+);
+
+router.post('/', 
+  authMiddleware,
+  checkPermission('create:permissions'),
+  (req, res) => permissionController.createPermission(req, res)
+);
+
+router.post('/assign', 
+  authMiddleware,
+  checkPermission('update:permissions'),
+  (req, res) => permissionController.assignToRole(req, res)
+);
 
 export default router;

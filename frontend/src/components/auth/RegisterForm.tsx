@@ -1,63 +1,88 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, message } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
-import { register } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Form, Input, Button } from 'antd';
+import { Link } from 'react-router-dom';
 
-const RegisterForm: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+interface RegisterFormProps {
+  onRegister: (username: string, email: string, password: string) => Promise<void>;
+}
 
-  const onFinish = async (values: { username: string; password: string; email: string }) => {
-    setLoading(true);
+const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
+  const [form] = Form.useForm();
+
+  const onFinish = async (values: any) => {
     try {
-      await register(values.username, values.password, values.email);
-      message.success('Registration successful');
-      navigate('/login');
+      await onRegister(values.username, values.email, values.password);
     } catch (error) {
-      message.error('Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error('Registration error details:', error);
     }
   };
 
   return (
     <Form
+      form={form}
       name="register"
-      className="register-form"
-      initialValues={{ remember: true }}
       onFinish={onFinish}
+      layout="vertical"
+      requiredMark={false}
     >
       <Form.Item
         name="username"
-        rules={[{ required: true, message: 'Please input your Username!' }]}
+        label="Username"
+        rules={[{ required: true, message: 'Please input your username!' }]}
       >
-        <Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="Username" />
+        <Input />
       </Form.Item>
+
       <Form.Item
         name="email"
+        label="Email"
         rules={[
-          { required: true, message: 'Please input your Email!' },
+          { required: true, message: 'Please input your email!' },
           { type: 'email', message: 'Please enter a valid email!' }
         ]}
       >
-        <Input prefix={<MailOutlined className="site-form-item-icon" />} placeholder="Email" />
+        <Input />
       </Form.Item>
+
       <Form.Item
         name="password"
-        rules={[{ required: true, message: 'Please input your Password!' }]}
+        label="Password"
+        rules={[
+          { required: true, message: 'Please input your password!' },
+          { min: 6, message: 'Password must be at least 6 characters!' }
+        ]}
       >
-        <Input
-          prefix={<LockOutlined className="site-form-item-icon" />}
-          type="password"
-          placeholder="Password"
-        />
+        <Input.Password />
       </Form.Item>
+
+      <Form.Item
+        name="confirmPassword"
+        label="Confirm Password"
+        dependencies={['password']}
+        rules={[
+          { required: true, message: 'Please confirm your password!' },
+          ({ getFieldValue }) => ({
+            validator(_, value) {
+              if (!value || getFieldValue('password') === value) {
+                return Promise.resolve();
+              }
+              return Promise.reject(new Error('Passwords do not match!'));
+            },
+          }),
+        ]}
+      >
+        <Input.Password />
+      </Form.Item>
+
       <Form.Item>
-        <Button type="primary" htmlType="submit" className="register-form-button" loading={loading}>
+        <Button type="primary" htmlType="submit" className="w-full">
           Register
         </Button>
       </Form.Item>
+
+      <div className="text-center">
+        Already have an account? <Link to="/login">Login here</Link>
+      </div>
     </Form>
   );
 };

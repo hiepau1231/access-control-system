@@ -1,25 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-export interface AuthRequest extends Request {
+interface AuthRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     username: string;
     roleId: string;
   };
 }
 
-export function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Unauthorized - No token provided' });
+    }
 
-  if (token == null) return res.sendStatus(401);
-
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
+    const token = authHeader.split(' ')[1];
+    
+    // TODO: Move JWT_SECRET to environment variables
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    
+    req.user = decoded as { id: string; username: string; roleId: string };
+    
     next();
-  });
-}
+  } catch (error) {
+    return res.status(401).json({ message: 'Unauthorized - Invalid token' });
+  }
+};

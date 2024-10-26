@@ -1,80 +1,47 @@
-import React, { useState } from 'react';
-import { Form, Input, message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/api';
-import Button from '../../components/common/Button';
+import LoginForm from '../../components/auth/LoginForm';
+import { Card, message } from 'antd';
 import { useTheme } from '../../contexts/ThemeContext';
+import { login } from '../../services/api';
+import axios from 'axios';
 
 const LoginPage: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const { isDarkMode } = useTheme();
+  const navigate = useNavigate();
 
-  const onFinish = async (values: { username: string; password: string }) => {
-    setLoading(true);
+  const handleLogin = async (username: string, password: string) => {
     try {
-      const response = await login(values.username, values.password);
-      if (response.data && response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        message.success('Đăng nhập thành công');
-        navigate('/dashboard');
+      const response = await login(username, password);
+      console.log('Login response:', response); // Debug log
+      
+      if (response && response.token) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        message.success('Login successful!');
+        navigate('/users');
       } else {
-        throw new Error('Token not found in response');
+        message.error('Invalid response from server');
+        console.error('Invalid response structure:', response);
       }
     } catch (error) {
-      message.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.');
-    } finally {
-      setLoading(false);
+      console.error('Login error:', error); // Debug log
+      if (axios.isAxiosError(error)) {
+        message.error(error.response?.data?.message || 'Login failed. Please check your credentials.');
+      } else {
+        message.error('Login failed. Please try again.');
+      }
     }
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} py-12 px-4 sm:px-6 lg:px-8`}>
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className={`mt-6 text-center text-3xl font-extrabold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            Đăng nhập
-          </h2>
-        </div>
-        <Form
-          name="login"
-          initialValues={{ remember: true }}
-          onFinish={onFinish}
-          className="mt-8 space-y-6"
-        >
-          <Form.Item
-            name="username"
-            rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
-          >
-            <Input 
-              prefix={<UserOutlined className={isDarkMode ? 'text-gray-300' : 'text-gray-400'} />} 
-              placeholder="Tên đăng nhập" 
-              className={`rounded-md ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`} 
-            />
-          </Form.Item>
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-          >
-            <Input.Password 
-              prefix={<LockOutlined className={isDarkMode ? 'text-gray-300' : 'text-gray-400'} />} 
-              placeholder="Mật khẩu" 
-              className={`rounded-md ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`} 
-            />
-          </Form.Item>
-          <Form.Item>
-            <Button
-              variant="primary"
-              htmlType="submit"
-              loading={loading}
-              className="w-full"
-            >
-              Đăng nhập
-            </Button>
-          </Form.Item>
-        </Form>
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card
+        title="Login"
+        className={`w-full max-w-md ${isDarkMode ? 'bg-gray-800 text-white' : ''}`}
+      >
+        <LoginForm onLogin={handleLogin} />
+      </Card>
     </div>
   );
 };

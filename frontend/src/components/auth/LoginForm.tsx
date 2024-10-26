@@ -1,71 +1,51 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { login } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Form, Input, Button } from 'antd';
+import { Link } from 'react-router-dom';
 
 interface LoginFormProps {
-  onLogin: (username: string, password: string) => void;
+  onLogin: (username: string, password: string) => Promise<void>;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [form] = Form.useForm();
 
-  const onFinish = async (values: { username: string; password: string }) => {
-    setLoading(true);
-    try {
-      const response = await login(values.username, values.password);
-      localStorage.setItem('token', response.data.token);
-      message.success('Đăng nhập thành công');
-      onLogin(values.username, values.password);
-      navigate('/dashboard');
-    } catch (error) {
-      message.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.');
-    } finally {
-      setLoading(false);
-    }
+  const onFinish = async (values: any) => {
+    await onLogin(values.username, values.password);
   };
 
   return (
     <Form
+      form={form}
       name="login"
-      className="login-form"
-      initialValues={{ remember: true }}
       onFinish={onFinish}
+      layout="vertical"
+      requiredMark={false}
     >
       <Form.Item
         name="username"
-        rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
+        label="Username"
+        rules={[{ required: true, message: 'Please input your username!' }]}
       >
-        <Input 
-          prefix={<UserOutlined className="site-form-item-icon" />} 
-          placeholder="Tên đăng nhập"
-          size="large"
-        />
+        <Input />
       </Form.Item>
+
       <Form.Item
         name="password"
-        rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+        label="Password"
+        rules={[{ required: true, message: 'Please input your password!' }]}
       >
-        <Input
-          prefix={<LockOutlined className="site-form-item-icon" />}
-          type="password"
-          placeholder="Mật khẩu"
-          size="large"
-        />
+        <Input.Password />
       </Form.Item>
+
       <Form.Item>
-        <Button 
-          type="primary" 
-          htmlType="submit" 
-          className="login-form-button w-full"
-          size="large"
-          loading={loading}
-        >
-          Đăng nhập
+        <Button type="primary" htmlType="submit" className="w-full">
+          Login
         </Button>
       </Form.Item>
+
+      <div className="text-center">
+        Don't have an account? <Link to="/register">Register here</Link>
+      </div>
     </Form>
   );
 };

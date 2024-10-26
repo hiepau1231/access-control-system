@@ -1,12 +1,11 @@
 import express from 'express';
-import * as AuthController from '../controllers/AuthController';
+import { AuthController } from '../controllers/AuthController';
 
 const router = express.Router();
+const authController = new AuthController();
 
-router.post('/register', AuthController.register);
-router.post('/login', AuthController.login);
-router.post('/enable-2fa', AuthController.enable2FA);
-router.post('/verify-2fa', AuthController.verify2FA);
-router.post('/disable-2fa', AuthController.disable2FA);
+// Bind the methods to the controller instance to maintain correct 'this' context
+router.post('/login', (req, res) => authController.login(req, res));
+router.post('/register', (req, res) => authController.register(req, res));
 
 export default router;

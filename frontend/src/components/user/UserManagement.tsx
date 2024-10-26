@@ -1,32 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Table, Input, message, Space, Modal, Form } from 'antd';
 import { UserAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { getUsers, createUser, updateUser, deleteUser } from '../../services/api';
 import { debounce } from '../../utils/debounce';
 import Button from '../common/Button';
 import { useTheme } from '../../contexts/ThemeContext';
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-}
+import type { User } from '../../services/api';
 
 const UserManagement: React.FC = () => {
   const { isDarkMode } = useTheme();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getUsers();
-      setUsers(data);
+      const users = await getUsers();
+      setUsers(users);
     } catch (error) {
       message.error('Failed to fetch users');
     } finally {
@@ -34,7 +28,8 @@ const UserManagement: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
+  // Fetch users when component mounts
+  React.useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
@@ -56,7 +51,7 @@ const UserManagement: React.FC = () => {
       setEditingUserId(null);
       form.resetFields();
     }
-    setIsModalVisible(true);
+    setIsModalOpen(true);
   };
 
   const handleOk = async () => {
@@ -69,7 +64,7 @@ const UserManagement: React.FC = () => {
         await createUser(values);
         message.success('User created successfully');
       }
-      setIsModalVisible(false);
+      setIsModalOpen(false);
       fetchUsers();
     } catch (error) {
       message.error('Failed to save user');
@@ -99,13 +94,13 @@ const UserManagement: React.FC = () => {
     },
     {
       title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
+      dataIndex: 'roleId',
+      key: 'roleId',
     },
     {
       title: 'Actions',
       key: 'actions',
-      render: (text: string, record: User) => (
+      render: (_: string, record: User) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => showModal(record)}>Edit</Button>
           <Button icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} danger>Delete</Button>
@@ -147,9 +142,9 @@ const UserManagement: React.FC = () => {
       />
       <Modal
         title={editingUserId ? "Edit User" : "Add User"}
-        visible={isModalVisible}
+        open={isModalOpen}
         onOk={handleOk}
-        onCancel={() => setIsModalVisible(false)}
+        onCancel={() => setIsModalOpen(false)}
         width="95%"
         style={{ maxWidth: '500px' }}
       >
@@ -160,7 +155,7 @@ const UserManagement: React.FC = () => {
           <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+          <Form.Item name="roleId" label="Role" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
         </Form>

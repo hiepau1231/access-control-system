@@ -1,97 +1,67 @@
 import { Request, Response } from 'express';
-import { User } from '../models/User';
-import { Op } from 'sequelize';
-import bcrypt from 'bcrypt';
-import { decrypt } from '../utils/encryption';
-import { cache } from '../utils/cache';
+import { UserModel } from '../models/User';
 
 export class UserController {
-  static async getAllUsers(req: Request, res: Response) {
+  async getAllUsers(req: Request, res: Response) {
     try {
-      const { page = 1, limit = 10, search } = req.query;
-      const cacheKey = `users_${page}_${limit}_${search}`;
-      const cachedUsers = cache.get(cacheKey);
-
-      if (cachedUsers) {
-        return res.json(cachedUsers);
-      }
-
-      const offset = (Number(page) - 1) * Number(limit);
-
-      let whereClause = {};
-      if (search) {
-        whereClause = {
-          [Op.or]: [
-            { username: { [Op.like]: `%${search}%` } },
-            { email: { [Op.like]: `%${search}%` } }
-          ]
-        };
-      }
-
-      const users = await User.findAndCountAll({
-        where: whereClause,
-        limit: Number(limit),
-        offset: offset,
-        attributes: ['id', 'username', 'email', 'roleId']
-      });
-
-      const result = {
-        total: users.count,
-        users: users.rows,
-        currentPage: Number(page),
-        totalPages: Math.ceil(users.count / Number(limit))
-      };
-
-      cache.set(cacheKey, result, 300); // Cache for 5 minutes
-
-      res.json(result);
+      const users = await UserModel.getAll();
+      res.json(users);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error getting users:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   }
 
-  static async getUserById(req: Request, res: Response) {
+  async getUserById(req: Request, res: Response) {
     try {
-      const user = await User.findById(req.params.id);
+      const { id } = req.params;
+      const user = await UserModel.findById(id);
+      
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      res.json({ ...user, password: undefined });
+      
+      res.json(user);
     } catch (error) {
-      console.error('Error getting user by id:', error);
-      res.status(500).json({ message: 'Internal server error', error: error.message });
+      console.error('Error getting user:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   }
 
-  static async updateUser(req: Request, res: Response) {
+  async updateUser(req: Request, res: Response) {
     try {
-      const { username, email, roleId, password } = req.body;
-      const updates: Partial<User> = { username, email, roleId };
-
-      if (password) {
-        updates.password = await bcrypt.hash(password, 10);
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const user = await UserModel.findById(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
       }
 
-      await User.update(req.params.id, updates);
-      res.json({ message: 'User updated successfully' });
+      await UserModel.update(id, updates);
+      const updatedUser = await UserModel.findById(id);
+      
+      res.json(updatedUser);
     } catch (error) {
       console.error('Error updating user:', error);
-      if (error.message.includes('UNIQUE constraint failed')) {
-        res.status(400).json({ message: 'Username or email already exists' });
-      } else {
-        res.status(500).json({ message: 'Internal server error', error: error.message });
-      }
+      res.status(500).json({ message: 'Internal server error' });
     }
   }
 
-  static async deleteUser(req: Request, res: Response) {
+  async deleteUser(req: Request, res: Response) {
     try {
-      await User.delete(req.params.id);
-      res.json({ message: 'User deleted successfully' });
+      const { id } = req.params;
+      
+      const user = await UserModel.findById(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      await UserModel.delete(id);
+      res.status(204).send();
     } catch (error) {
       console.error('Error deleting user:', error);
-      res.status(500).json({ message: 'Internal server error', error: error.message });
+      res.status(500).json({ message: 'Internal server error' });
     }
   }
 }

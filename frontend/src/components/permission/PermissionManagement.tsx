@@ -1,31 +1,42 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Input, Button, Space, Row, Col } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { getPermissions, deletePermission } from '../../services/api';
 import { handleError, showSuccess } from '../../utils/errorHandler';
 import { debounce } from '../../utils/debounce';
 import LoadingIndicator from '../common/LoadingIndicator';
+import type { Permission } from '../../services/api';
 import '../../styles/animations.css';
 
 const { Search } = Input;
 
-interface Permission {
-  id: string;
-  name: string;
-  description: string;
+interface PaginationState {
+  current: number;
+  pageSize: number;
+  total: number;
 }
 
-const PermissionManagement: React.FC = React.memo(() => {
+interface PaginatedResponse<T> {
+  data: T[];
+  currentPage: number;
+  total: number;
+}
+
+const PermissionManagement: React.FC = () => {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-  const [searchText, setSearchText] = useState('');
+  const [search, setSearch] = useState('');
+  const [pagination, setPagination] = useState<PaginationState>({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
 
-  const fetchPermissions = useCallback(async (page: number = 1, limit: number = 10, search: string = '') => {
+  const fetchPermissions = async (page: number, limit: number, searchTerm: string) => {
     setLoading(true);
     try {
-      const response = await getPermissions(page, limit, search);
-      setPermissions(response.permissions);
+      const response = await getPermissions(page, limit, searchTerm);
+      setPermissions(response.data);
       setPagination({
         ...pagination,
         current: response.currentPage,
@@ -36,44 +47,37 @@ const PermissionManagement: React.FC = React.memo(() => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchPermissions();
-  }, [fetchPermissions]);
+  const handleTableChange = (pagination: any) => {
+    fetchPermissions(pagination.current, pagination.pageSize, search);
+  };
 
-  const handleTableChange = useCallback((pagination: any) => {
-    fetchPermissions(pagination.current, pagination.pageSize, searchText);
-  }, [fetchPermissions, searchText]);
+  const debouncedSearch = debounce((value: string) => {
+    setSearch(value);
+    fetchPermissions(1, pagination.pageSize, value);
+  }, 300);
 
-  const debouncedSearch = useMemo(
-    () => debounce((value: string) => {
-      setSearchText(value);
-      fetchPermissions(1, pagination.pageSize, value);
-    }, 300),
-    [fetchPermissions, pagination.pageSize]
-  );
-
-  const handleSearch = useCallback((value: string) => {
+  const handleSearch = (value: string) => {
     debouncedSearch(value);
-  }, [debouncedSearch]);
+  };
 
-  const handleEdit = useCallback((record: Permission) => {
+  const handleEdit = (record: Permission) => {
     // Implement edit functionality
     console.log('Edit permission:', record);
-  }, []);
+  };
 
-  const handleDelete = useCallback(async (id: string) => {
+  const handleDelete = async (id: string) => {
     try {
       await deletePermission(id);
       showSuccess('Permission deleted successfully');
-      fetchPermissions(pagination.current, pagination.pageSize, searchText);
+      fetchPermissions(pagination.current, pagination.pageSize, search);
     } catch (error) {
       handleError(error);
     }
-  }, [fetchPermissions, pagination.current, pagination.pageSize, searchText]);
+  };
 
-  const columns = useMemo(() => [
+  const columns = [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -96,7 +100,7 @@ const PermissionManagement: React.FC = React.memo(() => {
         </Space>
       ),
     },
-  ], [handleEdit, handleDelete]);
+  ];
 
   return (
     <LoadingIndicator loading={loading}>
@@ -127,6 +131,6 @@ const PermissionManagement: React.FC = React.memo(() => {
       </div>
     </LoadingIndicator>
   );
-});
+};
 
 export default PermissionManagement;

@@ -1,146 +1,156 @@
-# Access Control and Data Security Management System
+# Ứng dụng Web Quản lý Truy cập và Bảo mật Dữ liệu
 
-This project is a web-based system that provides role-based access control (RBAC) and data security management using encryption methods with Secret Keys. It is designed for small and medium-sized enterprises (SMEs) to ensure secure access control and data protection.
+## Tổng quan
+Hệ thống web cung cấp kiểm soát truy cập dựa trên vai trò (RBAC) và quản lý bảo mật dữ liệu sử dụng phương pháp mã hóa với Khóa bí mật. Được thiết kế cho doanh nghiệp vừa và nhỏ (SMEs) để đảm bảo kiểm soát truy cập an toàn và bảo vệ dữ liệu.
 
-## Technologies Used
+## Tính năng
+- 🔐 Xác thực & Phân quyền người dùng
+- 👥 Quản lý người dùng
+- 🎭 Kiểm soát truy cập dựa trên vai trò (RBAC)
+- 🔑 Quản lý quyền hạn
+- 🌓 Hỗ trợ giao diện Sáng/Tối
+- 📱 Thiết kế tương thích đa thiết bị
 
-- Frontend:
-  - React (TypeScript)
-  - Ant Design (AntD)
-  - TailwindCSS
-  - React Router
-- Backend:
-  - Node.js
-  - Express.js
-- Database: SQLite
-- ORM: Sequelize
-- Authentication: JSON Web Tokens (JWT)
-- State Management: React Context API
-- Styling: Combination of Ant Design components and custom TailwindCSS
-
-## Features
-
-- Role-based access control (RBAC)
-- User management
-- Role management
-- Permission management
-- Dark mode support
-- Responsive design
-- Secure authentication using JWT
-- Data encryption for sensitive information
-
-## Prerequisites
-
-Before you begin, ensure you have met the following requirements:
-
-- Node.js (v14 or later)
-- npm (v6 or later)
-
-## Getting Started
-
-To get this project up and running, follow these steps:
-
-### Backend Setup
-
-1. Navigate to the backend directory:
-   ```
-   cd backend
-   ```
-
-2. Install the dependencies:
-   ```
-   npm install
-   ```
-
-3. Create a `.env` file in the backend directory and add the following:
-   ```
-   PORT=3001
-   JWT_SECRET=your_jwt_secret_here
-   ```
-
-4. Initialize the database:
-   ```
-   npm run db:init
-   ```
-
-5. Start the backend server:
-   ```
-   npm run dev
-   ```
-
-The backend server should now be running on `http://localhost:3001`.
-
-### Frontend Setup
-
-1. Open a new terminal and navigate to the frontend directory:
-   ```
-   cd frontend
-   ```
-
-2. Install the dependencies:
-   ```
-   npm install
-   ```
-
-3. Create a `.env` file in the frontend directory and add the following:
-   ```
-   REACT_APP_API_URL=http://localhost:3001/api
-   ```
-
-4. Start the frontend development server:
-   ```
-   npm start
-   ```
-
-The frontend application should now be running on `http://localhost:3000`.
-
-## Usage
-
-1. Open your web browser and go to `http://localhost:3000`
-2. You can log in with the default admin account:
-   - Username: admin
-   - Password: admin123
-3. Explore the different sections: Dashboard, User Management, Role Management, and Permission Management
-4. Try out the dark mode feature in the Settings page
-
-## Running Tests
-
-### Backend Tests
-
-In the backend directory, run:
-```
-npm test
-```
-
-### Frontend Tests
-
-In the frontend directory, run:
-```
-npm test
-```
-
-## Building for Production
+## Công nghệ sử dụng
+### Frontend
+- React với TypeScript
+- Ant Design (AntD)
+- TailwindCSS
+- React Router
+- Axios
 
 ### Backend
+- Node.js
+- Express
+- SQLite
+- JWT Authentication
+- bcrypt cho mã hóa mật khẩu
 
-In the backend directory, run:
+## Cấu trúc dự án
 ```
-npm run build
+project-root/
+├── frontend/                 # Ứng dụng React frontend
+│   ├── public/              # File tĩnh
+│   └── src/
+│       ├── components/      # Components tái sử dụng
+│       ├── contexts/        # React contexts
+│       ├── pages/          # Components trang
+│       ├── services/       # Dịch vụ API
+│       └── utils/          # Hàm tiện ích
+└── backend/                # Ứng dụng Node.js backend
+    └── src/
+        ├── config/         # File cấu hình
+        ├── controllers/    # Xử lý request
+        ├── middleware/     # Middleware Express
+        ├── models/         # Mô hình dữ liệu
+        └── routes/         # Định tuyến API
 ```
 
-### Frontend
+## Bắt đầu
 
-In the frontend directory, run:
+### Yêu cầu
+- Node.js (v14 trở lên)
+- npm hoặc yarn
+
+### Cài đặt
+
+1. Clone repository:
+```bash
+git clone [repository-url]
+cd project-root
 ```
-npm run build
+
+2. Cài đặt dependencies cho backend:
+```bash
+cd backend
+npm install
 ```
 
-This will create optimized production builds for both the backend and frontend.
+3. Cài đặt dependencies cho frontend:
+```bash
+cd frontend
+npm install
+```
 
-## Contributing
+### Chạy ứng dụng
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Khởi động server backend:
+```bash
+cd backend
+npm run dev
+```
 
-## License
+2. Khởi động server frontend:
+```bash
+cd frontend
+npm start
+```
 
-This project is licensed under the MIT License.
+Ứng dụng sẽ chạy tại:
+- Frontend: http://localhost:3001
+- Backend API: http://localhost:3000
+
+## Tài khoản mặc định
+```
+Tên đăng nhập: admin
+Mật khẩu: admin123
+```
+
+## Trạng thái triển khai tính năng
+
+### Đã hoàn thành ✅
+- Xác thực người dùng
+- Triển khai RBAC cơ bản
+- Quản lý người dùng
+- Quản lý vai trò
+- Quản lý quyền hạn
+- Giao diện Sáng/Tối
+- Thiết kế tương thích
+
+### Đang thực hiện 🔄
+- Tính năng RBAC nâng cao
+- Kiểm soát quyền chi tiết
+- Quản lý phân cấp vai trò
+- Ghi log hoạt động người dùng
+
+### Kế hoạch ⏳
+- Mã hóa dữ liệu
+- Quản lý khóa bí mật
+- Tối ưu hiệu suất
+- Tăng cường tính năng bảo mật
+
+## Tài liệu API
+
+### Xác thực
+- POST `/api/auth/login` - Đăng nhập
+- POST `/api/auth/register` - Đăng ký
+
+### Người dùng
+- GET `/api/users` - Lấy danh sách người dùng
+- GET `/api/users/:id` - Lấy thông tin người dùng theo ID
+- PUT `/api/users/:id` - Cập nhật người dùng
+- DELETE `/api/users/:id` - Xóa người dùng
+
+### Vai trò
+- GET `/api/roles` - Lấy danh sách vai trò
+- GET `/api/roles/:id` - Lấy thông tin vai trò theo ID
+- POST `/api/roles` - Tạo vai trò mới
+- PUT `/api/roles/:id` - Cập nhật vai trò
+- DELETE `/api/roles/:id` - Xóa vai trò
+
+### Quyền hạn
+- GET `/api/permissions` - Lấy danh sách quyền
+- GET `/api/permissions/:id` - Lấy thông tin quyền theo ID
+- POST `/api/permissions` - Tạo quyền mới
+- PUT `/api/permissions/:id` - Cập nhật quyền
+- DELETE `/api/permissions/:id` - Xóa quyền
+
+## Đóng góp
+1. Fork repository
+2. Tạo nhánh tính năng (`git checkout -b feature/TinhNangMoi`)
+3. Commit thay đổi (`git commit -m 'Thêm tính năng mới'`)
+4. Push lên nhánh (`git push origin feature/TinhNangMoi`)
+5. Tạo Pull Request
+
+## Giấy phép
+Dự án này được cấp phép theo giấy phép MIT - xem file LICENSE để biết thêm chi tiết.

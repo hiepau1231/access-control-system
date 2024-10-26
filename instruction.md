@@ -66,85 +66,65 @@ This project aims to design and implement a web-based system that provides role-
 
 ## Project File Structure
 
-```
 project-root/
 ├── frontend/
-│ ├── public/
-│ │ └── index.html
-│ ├── src/
-│ │ ├── components/
-│ │ │ ├── common/
-│ │ │ │ ├── Button.tsx
-│ │ │ │ ├── Navigation.tsx
-│ │ │ │ └── VirtualTable.tsx
-│ │ │ ├── user/
-│ │ │ │ └── UserManagement.tsx
-│ │ │ ├── role/
-│ │ │ │ └── RoleManagement.tsx
-│ │ │ └── ErrorBoundary.tsx
-│ │ ├── contexts/
-│ │ │ └── ThemeContext.tsx
-│ │ ├── pages/
-│ │ │ ├── dashboard/
-│ │ │ │ └── DashboardPage.tsx
-│ │ │ ├── login/
-│ │ │ │ └── LoginPage.tsx
-│ │ │ ├── register/
-│ │ │ │ └── RegisterPage.tsx
-│ │ │ ├── user/
-│ │ │ │ └── UserManagementPage.tsx
-│ │ │ ├── role/
-│ │ │ │ └── RoleManagementPage.tsx
-│ │ │ ├── permission/
-│ │ │ │ └── PermissionManagementPage.tsx
-│ │ │ └── settings/
-│ │ │ └── SettingsPage.tsx
-│ │ ├── services/
-│ │ │ ├── api.ts
-│ │ │ └── auth.ts
-│ │ ├── styles/
-│ │ │ ├── tailwind.css
-│ │ │ ├── global.css
-│ │ │ └── theme.ts
-│ │ ├── utils/
-│ │ │ ├── errorHandler.ts
-│ │ │ └── debounce.ts
-│ │ ├── App.tsx
-│ │ └── index.tsx
-│ ├── package.json
-│ ├── tsconfig.json
-│ └── tailwind.config.js
+│   ├── public/
+│   │   └── index.html
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── auth/
+│   │   │   │   ├── LoginForm.tsx
+│   │   │   │   └── RegisterForm.tsx
+│   │   │   ├── common/
+│   │   │   │   ├── Button.tsx
+│   │   │   │   └── LoadingIndicator.tsx
+│   │   │   ├── permission/
+│   │   │   │   └── PermissionManagement.tsx
+│   │   │   ├── role/
+│   │   │   │   └── RoleManagement.tsx
+│   │   │   └── user/
+│   │   │       └── UserManagement.tsx
+│   │   ├── contexts/
+│   │   │   └── ThemeContext.tsx
+│   │   ├── pages/
+│   │   │   ├── login/
+│   │   │   │   └── LoginPage.tsx
+│   │   │   └── register/
+│   │   │       └── RegisterPage.tsx
+│   │   ├── services/
+│   │   │   └── api.ts
+│   │   ├── utils/
+│   │   │   ├── debounce.ts
+│   │   │   └── errorHandler.ts
+│   │   ├── App.tsx
+│   │   └── index.tsx
+│   └── package.json
 ├── backend/
-│ ├── src/
-│ │ ├── config/
-│ │ │ └── database.ts
-│ │ ├── controllers/
-│ │ │ ├── AuthController.ts
-│ │ │ ├── UserController.ts
-│ │ │ ├── RoleController.ts
-│ │ │ └── PermissionController.ts
-│ │ ├── middleware/
-│ │ │ ├── authMiddleware.ts
-│ │ │ └── checkPermission.ts
-│ │ ├── models/
-│ │ │ ├── User.ts
-│ │ │ ├── Role.ts
-│ │ │ └── Permission.ts
-│ │ ├── routes/
-│ │ │ ├── authRoutes.ts
-│ │ │ ├── userRoutes.ts
-│ │ │ ├── roleRoutes.ts
-│ │ │ └── permissionRoutes.ts
-│ │ ├── utils/
-│ │ │ ├── encryption.ts
-│ │ │ └── cache.ts
-│ │ └── app.ts
-│ ├── package.json
-│ └── tsconfig.json
-├── package.json
-├── README.md
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── database.ts
+│   │   ├── controllers/
+│   │   │   ├── AuthController.ts
+│   │   │   ├── PermissionController.ts
+│   │   │   ├── RoleController.ts
+│   │   │   └── UserController.ts
+│   │   ├── middleware/
+│   │   │   ├── authMiddleware.ts
+│   │   │   └── checkPermission.ts
+│   │   ├── models/
+│   │   │   ├── Permission.ts
+│   │   │   ├── Role.ts
+│   │   │   └── User.ts
+│   │   ├── routes/
+│   │   │   ├── authRoutes.ts
+│   │   │   ├── permissionRoutes.ts
+│   │   │   ├── roleRoutes.ts
+│   │   │   └── userRoutes.ts
+│   │   └── app.ts
+│   └── package.json
 ├── instruction.md
-└── currenttask.md
+├── currenttask.md
+└── README.md
 
 ## Data Type Definitions
 

@@ -1,73 +1,39 @@
-import React, { useState } from 'react';
-import { Form, Input, message } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import RegisterForm from '../../components/auth/RegisterForm';
+import { Card, message } from 'antd';
+import { useTheme } from '../../contexts/ThemeContext';
 import { register } from '../../services/api';
-import Button from '../../components/common/Button';
+import axios from 'axios';
 
 const RegisterPage: React.FC = () => {
-  const [loading, setLoading] = useState(false);
+  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
 
-  const onFinish = async (values: { username: string; email: string; password: string }) => {
-    setLoading(true);
+  const handleRegister = async (username: string, email: string, password: string) => {
     try {
-      await register(values.username, values.password, values.email);
-      message.success('Đăng ký thành công');
+      await register(username, email, password);
+      message.success('Registration successful! Please login.');
       navigate('/login');
     } catch (error) {
-      message.error('Đăng ký thất bại. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
+      if (axios.isAxiosError(error)) {
+        message.error(error.response?.data?.message || 'Registration failed. Please try again.');
+        console.error('Registration error:', error.response?.data);
+      } else {
+        message.error('Registration failed. Please try again.');
+        console.error('Registration error:', error);
+      }
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Đăng ký tài khoản
-          </h2>
-        </div>
-        <Form
-          name="register"
-          onFinish={onFinish}
-          className="mt-8 space-y-6"
-        >
-          <Form.Item
-            name="username"
-            rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
-          >
-            <Input prefix={<UserOutlined className="text-gray-400" />} placeholder="Tên đăng nhập" className="rounded-md" />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            rules={[
-              { required: true, message: 'Vui lòng nhập email!' },
-              { type: 'email', message: 'Email không hợp lệ!' }
-            ]}
-          >
-            <Input prefix={<MailOutlined className="text-gray-400" />} placeholder="Email" className="rounded-md" />
-          </Form.Item>
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-          >
-            <Input.Password prefix={<LockOutlined className="text-gray-400" />} placeholder="Mật khẩu" className="rounded-md" />
-          </Form.Item>
-          <Form.Item>
-            <Button
-              variant="primary"
-              htmlType="submit"
-              loading={loading}
-              className="w-full"
-            >
-              Đăng ký
-            </Button>
-          </Form.Item>
-        </Form>
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card
+        title="Register"
+        className={`w-full max-w-md ${isDarkMode ? 'bg-gray-800 text-white' : ''}`}
+      >
+        <RegisterForm onRegister={handleRegister} />
+      </Card>
     </div>
   );
 };

@@ -11,10 +11,12 @@ export class PermissionModel {
   static async create(permission: Omit<Permission, 'id'>): Promise<Permission> {
     const db = await openDb();
     const id = uuidv4();
+    
     await db.run(
       'INSERT INTO permissions (id, name, description) VALUES (?, ?, ?)',
       [id, permission.name, permission.description]
     );
+    
     await db.close();
     return { id, ...permission };
   }
@@ -33,22 +35,6 @@ export class PermissionModel {
     return permissions;
   }
 
-  static async update(id: string, updates: Partial<Permission>): Promise<void> {
-    const db = await openDb();
-    const { name, description } = updates;
-    await db.run(
-      'UPDATE permissions SET name = ?, description = ? WHERE id = ?',
-      [name, description, id]
-    );
-    await db.close();
-  }
-
-  static async delete(id: string): Promise<void> {
-    const db = await openDb();
-    await db.run('DELETE FROM permissions WHERE id = ?', [id]);
-    await db.close();
-  }
-
   static async assignToRole(roleId: string, permissionId: string): Promise<void> {
     const db = await openDb();
     await db.run(
@@ -58,24 +44,13 @@ export class PermissionModel {
     await db.close();
   }
 
-  static async removeFromRole(roleId: string, permissionId: string): Promise<void> {
+  static async getRolePermissions(roleId: string): Promise<string[]> {
     const db = await openDb();
-    await db.run(
-      'DELETE FROM role_permissions WHERE roleId = ? AND permissionId = ?',
-      [roleId, permissionId]
-    );
-    await db.close();
-  }
-
-  static async getPermissionsForRole(roleId: string): Promise<Permission[]> {
-    const db = await openDb();
-    const permissions = await db.all<Permission[]>(
-      `SELECT p.* FROM permissions p
-       JOIN role_permissions rp ON p.id = rp.permissionId
-       WHERE rp.roleId = ?`,
+    const permissions = await db.all<{permissionId: string}[]>(
+      'SELECT permissionId FROM role_permissions WHERE roleId = ?',
       [roleId]
     );
     await db.close();
-    return permissions;
+    return permissions.map(p => p.permissionId);
   }
 }
