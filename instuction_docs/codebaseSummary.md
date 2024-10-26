@@ -12,7 +12,7 @@
    - LoadingIndicator.tsx: Component loading
 
 3. Layout
-   - MainLayout.tsx: Layout chính với sidebar và header
+   - MainLayout.tsx: Layout chính với sidebar và header, dark/light mode
 
 4. Role & Permission
    - RoleManagement.tsx: Quản lý vai trò
@@ -23,8 +23,8 @@
    - UserManagement.tsx: Quản lý người dùng
 
 ### Services
-- api.ts: Tất cả API calls với TypeScript interfaces
-- auth.ts: Xử lý authentication
+- api.ts: API calls với TypeScript interfaces và error handling
+- auth.ts: Authentication và token management
 
 ### Context
 - ThemeContext.tsx: Quản lý dark/light mode
@@ -42,71 +42,78 @@
 2. Relationships
    - User -> Role (Many-to-One)
    - Role -> Permission (Many-to-Many)
-   - Role -> Role (Hierarchy)
+   - Role -> Role (Hierarchy with circular dependency check)
 
 ### Controllers
 1. AuthController
-   - Login
-   - Register
-   - Token management
+   - Login với JWT
+   - Register với role mặc định
+   - Token và role management
 
 2. UserController
-   - CRUD operations
-   - User management
+   - CRUD operations với permission check
+   - User management theo role
 
 3. RoleController
    - Role CRUD
    - Role hierarchy management
    - Permission assignment
+   - Circular dependency prevention
 
 4. PermissionController
    - Permission CRUD
    - Permission checks
+   - Role-based permission management
 
 ### Middleware
 1. authMiddleware
    - JWT verification
    - User authentication
+   - Token validation
 
 2. checkPermission
    - RBAC authorization
    - Permission validation
    - Role hierarchy checks
+   - Support cho multiple permissions
 
 ### Models
 1. User
-   - User operations
-   - Password hashing
+   - User CRUD operations
+   - Password hashing với bcrypt
    - Role assignment
+   - Error handling
 
 2. Role
    - Role operations
    - Hierarchy management
    - Permission management
+   - Circular dependency checks
 
 3. Permission
    - Permission operations
    - Role assignment
+   - Permission validation
 
 ## Tính năng đã hoàn thành
 1. Authentication với JWT
-2. RBAC cơ bản
-3. User Management
-4. Role Management
+2. RBAC với role hierarchy
+3. User Management với permission checks
+4. Role Management với circular dependency prevention
 5. Permission Management
-6. Role Hierarchy (basic)
-7. Dark/Light mode
+6. Dark/Light mode
+7. Error handling và validation
 
 ## Đang phát triển
-1. Role Hierarchy validation
-2. Error handling nâng cao
-3. Unit testing
-4. Loading states
-5. Error boundaries
+1. Role Hierarchy visualization
+2. Error boundaries
+3. Loading states
+4. Performance optimization
+5. Security enhancements
 
 ## Kế hoạch phát triển
 1. Data encryption
 2. Audit logging
 3. Advanced role hierarchy visualization
-4. Performance optimization
-5. Security enhancements
+4. Caching và performance optimization
+5. Security hardening

@@ -22,10 +22,6 @@
 - [x] API endpoints cho quản lý hierarchy
 - [x] Frontend component cho role hierarchy
 - [x] Xử lý circular dependency
-- [ ] Testing và validation
-  - [ ] Unit tests
-  - [ ] Integration tests
-  - [ ] Edge cases
 - [ ] Error handling nâng cao
   - [ ] Validation messages
   - [ ] Error boundaries
@@ -44,33 +40,20 @@
 ## Nhiệm vụ tiếp theo
 1. Hoàn thiện Role Hierarchy:
    - Thêm validation cho role hierarchy
-   - Cải thiện UI/UX
-   - Thêm unit tests
+   - Cải thiện UI/UX với tree view visualization
+   - Thêm confirmation dialogs
 
 2. Cải thiện Error Handling:
    - Thêm error boundaries
    - Cải thiện error messages
    - Thêm loading states
 
-3. Thêm Testing:
-   - Unit tests cho các components
-   - Integration tests cho API
-   - End-to-end tests cho workflows chính
-
-## Vấn đề cần giải quyết
-1. Tối ưu hóa hiệu suất:
-   - Caching cho API calls
+3. Cải thiện Performance:
+   - Implement caching cho API calls
    - Lazy loading cho components
    - Optimize database queries
 
-2. Cải thiện bảo mật:
+4. Tăng cường bảo mật:
    - Implement rate limiting
    - Add request validation
-   - Enhance error handling
    - Set up security headers
-
-3. Hoàn thiện tài liệu:
-   - API documentation
-   - User guide
-   - Deployment instructions
-   - Security considerations

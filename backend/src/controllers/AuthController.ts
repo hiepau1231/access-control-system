@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { UserModel } from '../models/User';
 import { getDb } from '../config/database';
+import { v4 as uuidv4 } from 'uuid';
 
 export class AuthController {
   async login(req: Request, res: Response) {
@@ -71,28 +72,60 @@ export class AuthController {
         return res.status(400).json({ message: 'All fields are required' });
       }
 
+      const db = await getDb();
+
       // Check if user already exists
-      const existingUser = await UserModel.findByUsername(username);
+      const existingUser = await db.get('SELECT * FROM users WHERE username = ? OR email = ?', [username, email]);
       if (existingUser) {
-        return res.status(400).json({ message: 'Username already exists' });
+        return res.status(400).json({ message: 'Username or email already exists' });
       }
 
-      // Create new user with default role
-      const user = await UserModel.create({
-        username,
-        email,
-        password,
-        roleId: 'default' // We need to ensure this default role exists
-      });
+      // Get default role (user role)
+      const userRole = await db.get('SELECT id FROM roles WHERE name = ?', ['user']);
+      if (!userRole) {
+        // Create user role if it doesn't exist
+        const roleId = uuidv4();
+        await db.run(
+          'INSERT INTO roles (id, name, description) VALUES (?, ?, ?)',
+          [roleId, 'user', 'Default user role']
+        );
 
-      res.status(201).json({
-        message: 'User registered successfully',
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email
-        }
-      });
+        // Create new user with hashed password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const userId = uuidv4();
+        await db.run(
+          'INSERT INTO users (id, username, email, password, roleId) VALUES (?, ?, ?, ?, ?)',
+          [userId, username, email, hashedPassword, roleId]
+        );
+
+        res.status(201).json({
+          message: 'User registered successfully',
+          user: {
+            id: userId,
+            username,
+            email,
+            roleId
+          }
+        });
+      } else {
+        // Create new user with existing user role
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const userId = uuidv4();
+        await db.run(
+          'INSERT INTO users (id, username, email, password, roleId) VALUES (?, ?, ?, ?, ?)',
+          [userId, username, email, hashedPassword, userRole.id]
+        );
+
+        res.status(201).json({
+          message: 'User registered successfully',
+          user: {
+            id: userId,
+            username,
+            email,
+            roleId: userRole.id
+          }
+        });
+      }
     } catch (error) {
       console.error('Registration error:', error);
       res.status(500).json({ message: 'Internal server error during registration' });

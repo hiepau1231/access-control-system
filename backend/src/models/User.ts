@@ -59,28 +59,35 @@ export class UserModel {
 
   static async update(id: string, updates: Partial<User>): Promise<void> {
     const db = await getDb();
-    const { username, email, password, roleId } = updates;
-    
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      await db.run(
-        'UPDATE users SET username = ?, email = ?, password = ?, roleId = ? WHERE id = ?',
-        [username, email, hashedPassword, roleId, id]
-      );
-    } else {
-      await db.run(
-        'UPDATE users SET username = ?, email = ?, roleId = ? WHERE id = ?',
-        [username, email, roleId, id]
-      );
+    try {
+      const { username, email, password, roleId } = updates;
+      
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.run(
+          'UPDATE users SET username = ?, email = ?, password = ?, roleId = ? WHERE id = ?',
+          [username, email, hashedPassword, roleId, id]
+        );
+      } else {
+        await db.run(
+          'UPDATE users SET username = ?, email = ?, roleId = ? WHERE id = ?',
+          [username, email, roleId, id]
+        );
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
     }
-    
-    await db.close();
   }
 
   static async delete(id: string): Promise<void> {
     const db = await getDb();
-    await db.run('DELETE FROM users WHERE id = ?', [id]);
-    await db.close();
+    try {
+      await db.run('DELETE FROM users WHERE id = ?', [id]);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
   }
 
   static async comparePassword(user: User, candidatePassword: string): Promise<boolean> {

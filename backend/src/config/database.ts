@@ -89,16 +89,25 @@ export async function initializeDatabase() {
     `);
 
     // Insert default role if it doesn't exist
-    const defaultRole = await database.get('SELECT * FROM roles WHERE name = ?', ['admin']);
-    if (!defaultRole) {
-      const roleId = uuidv4();
+    const adminRole = await database.get('SELECT * FROM roles WHERE name = ?', ['admin']);
+    if (!adminRole) {
+      // Tạo admin role với full permissions
+      const adminRoleId = uuidv4();
       await database.run(
         'INSERT INTO roles (id, name, description) VALUES (?, ?, ?)',
-        [roleId, 'admin', 'Administrator role with full access']
+        [adminRoleId, 'admin', 'Administrator role with full access']
       );
 
-      // Create default permissions
+      // Tạo user role với basic permissions
+      const userRoleId = uuidv4();
+      await database.run(
+        'INSERT INTO roles (id, name, description) VALUES (?, ?, ?)',
+        [userRoleId, 'user', 'Basic user role with limited access']
+      );
+
+      // Create permissions
       const permissions = [
+        // Admin permissions
         { id: uuidv4(), name: 'read:users', description: 'Can read users' },
         { id: uuidv4(), name: 'create:users', description: 'Can create users' },
         { id: uuidv4(), name: 'update:users', description: 'Can update users' },
@@ -110,31 +119,44 @@ export async function initializeDatabase() {
         { id: uuidv4(), name: 'read:permissions', description: 'Can read permissions' },
         { id: uuidv4(), name: 'create:permissions', description: 'Can create permissions' },
         { id: uuidv4(), name: 'update:permissions', description: 'Can update permissions' },
-        { id: uuidv4(), name: 'delete:permissions', description: 'Can delete permissions' }
+        { id: uuidv4(), name: 'delete:permissions', description: 'Can delete permissions' },
+        
+        // Basic user permissions
+        { id: uuidv4(), name: 'read:own', description: 'Can read own data' },
+        { id: uuidv4(), name: 'update:own', description: 'Can update own data' },
+        { id: uuidv4(), name: 'read:basic', description: 'Can read basic info' }
       ];
 
+      // Insert permissions and assign to roles
       for (const perm of permissions) {
         await database.run(
           'INSERT INTO permissions (id, name, description) VALUES (?, ?, ?)',
           [perm.id, perm.name, perm.description]
         );
 
-        // Assign permission to admin role
+        // Assign all permissions to admin role
         await database.run(
           'INSERT INTO role_permissions (roleId, permissionId) VALUES (?, ?)',
-          [roleId, perm.id]
+          [adminRoleId, perm.id]
         );
+
+        // Assign only basic permissions to user role
+        if (['read:own', 'update:own', 'read:basic'].includes(perm.name)) {
+          await database.run(
+            'INSERT INTO role_permissions (roleId, permissionId) VALUES (?, ?)',
+            [userRoleId, perm.id]
+          );
+        }
       }
 
-      // Create admin user with password: admin123
+      // Create admin user
       const adminPassword = await bcrypt.hash('admin123', 10);
-      const adminId = uuidv4();
       await database.run(
         'INSERT INTO users (id, username, email, password, roleId) VALUES (?, ?, ?, ?, ?)',
-        [adminId, 'admin', 'admin@example.com', adminPassword, roleId]
+        [uuidv4(), 'admin', 'admin@example.com', adminPassword, adminRoleId]
       );
 
-      console.log('Admin role, permissions and admin user created');
+      console.log('Roles, permissions and admin user created');
     }
 
     console.log('Database initialized successfully');
