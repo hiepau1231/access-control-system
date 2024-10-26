@@ -5,7 +5,16 @@ import RegisterPage from './pages/register/RegisterPage';
 import UserManagement from './components/user/UserManagement';
 import RoleManagement from './components/role/RoleManagement';
 import PermissionManagement from './components/permission/PermissionManagement';
+import MainLayout from './components/layout/MainLayout';
 import { ThemeProvider } from './contexts/ThemeContext';
+
+const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <MainLayout>{element}</MainLayout>;
+};
 
 const App: React.FC = () => {
   return (
@@ -15,9 +24,9 @@ const App: React.FC = () => {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/users" element={<UserManagement />} />
-          <Route path="/roles" element={<RoleManagement />} />
-          <Route path="/permissions" element={<PermissionManagement />} />
+          <Route path="/users" element={<PrivateRoute element={<UserManagement />} />} />
+          <Route path="/roles" element={<PrivateRoute element={<RoleManagement />} />} />
+          <Route path="/permissions" element={<PrivateRoute element={<PermissionManagement />} />} />
         </Routes>
       </Router>
     </ThemeProvider>

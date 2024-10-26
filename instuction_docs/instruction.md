@@ -64,67 +64,6 @@ This project aims to design and implement a web-based system that provides role-
 3. Backend implemented in Node.js.
 4. A comprehensive project report detailing the system architecture, development steps, and testing results.
 
-## Project File Structure
-
-project-root/
-├── frontend/
-│   ├── public/
-│   │   └── index.html
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── auth/
-│   │   │   │   ├── LoginForm.tsx
-│   │   │   │   └── RegisterForm.tsx
-│   │   │   ├── common/
-│   │   │   │   ├── Button.tsx
-│   │   │   │   └── LoadingIndicator.tsx
-│   │   │   ├── permission/
-│   │   │   │   └── PermissionManagement.tsx
-│   │   │   ├── role/
-│   │   │   │   └── RoleManagement.tsx
-│   │   │   └── user/
-│   │   │       └── UserManagement.tsx
-│   │   ├── contexts/
-│   │   │   └── ThemeContext.tsx
-│   │   ├── pages/
-│   │   │   ├── login/
-│   │   │   │   └── LoginPage.tsx
-│   │   │   └── register/
-│   │   │       └── RegisterPage.tsx
-│   │   ├── services/
-│   │   │   └── api.ts
-│   │   ├── utils/
-│   │   │   ├── debounce.ts
-│   │   │   └── errorHandler.ts
-│   │   ├── App.tsx
-│   │   └── index.tsx
-│   └── package.json
-├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── database.ts
-│   │   ├── controllers/
-│   │   │   ├── AuthController.ts
-│   │   │   ├── PermissionController.ts
-│   │   │   ├── RoleController.ts
-│   │   │   └── UserController.ts
-│   │   ├── middleware/
-│   │   │   ├── authMiddleware.ts
-│   │   │   └── checkPermission.ts
-│   │   ├── models/
-│   │   │   ├── Permission.ts
-│   │   │   ├── Role.ts
-│   │   │   └── User.ts
-│   │   ├── routes/
-│   │   │   ├── authRoutes.ts
-│   │   │   ├── permissionRoutes.ts
-│   │   │   ├── roleRoutes.ts
-│   │   │   └── userRoutes.ts
-│   │   └── app.ts
-│   └── package.json
-├── instruction.md
-├── currenttask.md
-└── README.md
 
 ## Data Type Definitions
 

@@ -11,6 +11,7 @@
   - [x] Button
   - [x] LoadingIndicator
   - [x] Navigation
+  - [x] Layout
 - [x] Kiểm thử frontend
 
 ## 2. Nghiên cứu về RBAC và Mã hóa dữ liệu với Khóa bí mật ✅
@@ -29,10 +30,11 @@
 - [x] Middleware kiểm soát truy cập
 - [x] Hoàn thiện kiểm tra quyền trong frontend
 - [x] Tích hợp RBAC với các chức năng cơ bản
+- [x] Giao diện quản lý quyền cho role
 - [ ] Tích hợp RBAC với các chức năng nâng cao
-  - [ ] Phân quyền chi tiết cho từng hành động
-  - [ ] Quản lý phân cấp vai trò
+  - [ ] Quản lý phân cấp vai trò (Role Hierarchy)
   - [ ] Ghi log hoạt động người dùng
+  - [ ] Báo cáo và thống kê quyền
 
 ## 5. Triển khai Mã hóa dữ liệu ⏳
 - [ ] Triển khai thuật toán mã hóa
@@ -63,21 +65,20 @@
 - [ ] Chuẩn bị báo cáo dự án
 
 ## Nhiệm vụ tiếp theo
-1. Hoàn thiện tích hợp RBAC nâng cao:
-   - Thêm phân quyền chi tiết cho từng hành động
-   - Triển khai quản lý phân cấp vai trò
-   - Thêm logging cho hoạt động người dùng
+1. Triển khai Role Hierarchy:
+   - Thiết kế schema cho role hierarchy
+   - Thêm UI cho quản lý phân cấp vai trò
+   - Cập nhật logic kiểm tra quyền để hỗ trợ kế thừa
 
-2. Bắt đầu triển khai mã hóa dữ liệu:
-   - Nghiên cứu và chọn thuật toán mã hóa phù hợp
-   - Thiết kế cơ chế quản lý khóa
-   - Lên kế hoạch triển khai chi tiết
+2. Triển khai Audit Logging:
+   - Thêm bảng audit_logs trong database
+   - Thêm middleware ghi log
+   - Tạo trang xem log
 
 3. Cải thiện UX và Security:
-   - Thêm loading states và error handling tốt hơn
+   - Thêm loading states và error handling
    - Implement rate limiting
    - Tăng cường validation
-   - Thêm audit logging
 
 ## Vấn đề cần giải quyết
 1. Tối ưu hóa hiệu suất:
