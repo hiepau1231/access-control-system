@@ -3,7 +3,7 @@ import axios, { AxiosResponse } from 'axios';
 const API_BASE_URL = 'http://localhost:3000/api';
 
 // Define interfaces for API responses
-interface PaginatedResponse<T> {
+export interface PaginatedResponse<T> {
   data: T[];
   currentPage: number;
   total: number;
@@ -28,7 +28,7 @@ export interface Permission {
   description: string;
 }
 
-interface LoginResponse {
+export interface LoginResponse {
   token: string;
   user: {
     id: string;
@@ -36,6 +36,11 @@ interface LoginResponse {
     email: string;
     roleId: string;
   };
+}
+
+export interface RoleHierarchy {
+  parent_role: string;
+  child_role: string;
 }
 
 const api = axios.create({
@@ -54,110 +59,92 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auth APIs
-export const login = async (username: string, password: string): Promise<LoginResponse> => {
-  const response = await api.post<LoginResponse>('/auth/login', { username, password });
-  return response.data;
-};
+// Sửa lại interceptor response để trả về đúng kiểu dữ liệu
+api.interceptors.response.use(
+  (response: AxiosResponse) => response.data,
+  (error) => Promise.reject(error)
+);
 
-export const register = async (username: string, email: string, password: string): Promise<User> => {
-  const response = await api.post<User>('/auth/register', { username, email, password });
-  return response.data;
-};
+// Auth APIs
+export const login = async (username: string, password: string): Promise<LoginResponse> => 
+  api.post('/auth/login', { username, password });
+
+export const register = (username: string, email: string, password: string) => 
+  api.post<User>('/auth/register', { username, email, password });
 
 // User APIs
-export const getUsers = async (): Promise<User[]> => {
-  const response = await api.get<User[]>('/users');
-  return response.data;
-};
+export const getUsers = async (): Promise<User[]> => 
+  api.get('/users');
 
-export const getAllUsers = () => getUsers();
+export const getAllUsers = async (): Promise<User[]> => 
+  api.get('/users');
 
-export const getUserById = async (id: string): Promise<User> => {
-  const response = await api.get<User>(`/users/${id}`);
-  return response.data;
-};
+export const getUserById = async (id: string): Promise<User> => 
+  api.get(`/users/${id}`);
 
-export const createUser = async (data: Partial<User>): Promise<User> => {
-  const response = await api.post<User>('/users', data);
-  return response.data;
-};
+export const createUser = async (data: Partial<User>): Promise<User> => 
+  api.post('/users', data);
 
-export const updateUser = async (id: string, data: Partial<User>): Promise<User> => {
-  const response = await api.put<User>(`/users/${id}`, data);
-  return response.data;
-};
+export const updateUser = async (id: string, data: Partial<User>): Promise<User> => 
+  api.put(`/users/${id}`, data);
 
-export const deleteUser = async (id: string): Promise<void> => {
-  await api.delete(`/users/${id}`);
-};
+export const deleteUser = async (id: string): Promise<void> => 
+  api.delete(`/users/${id}`);
 
 // Role APIs
-export const getRoles = async (): Promise<Role[]> => {
-  const response = await api.get<Role[]>('/roles');
-  return response.data;
-};
+export const getRoles = async (): Promise<Role[]> => 
+  api.get('/roles');
 
-export const getAllRoles = () => getRoles();
+export const getAllRoles = async (): Promise<Role[]> => 
+  api.get('/roles');
 
-export const getRoleById = async (id: string): Promise<Role> => {
-  const response = await api.get<Role>(`/roles/${id}`);
-  return response.data;
-};
+export const getRoleById = async (id: string): Promise<Role> => 
+  api.get(`/roles/${id}`);
 
-export const createRole = async (data: Partial<Role>): Promise<Role> => {
-  const response = await api.post<Role>('/roles', data);
-  return response.data;
-};
+export const createRole = async (data: Partial<Role>): Promise<Role> => 
+  api.post('/roles', data);
 
-export const updateRole = async (id: string, data: Partial<Role>): Promise<Role> => {
-  const response = await api.put<Role>(`/roles/${id}`, data);
-  return response.data;
-};
+export const updateRole = async (id: string, data: Partial<Role>): Promise<Role> => 
+  api.put(`/roles/${id}`, data);
 
-export const deleteRole = async (id: string): Promise<void> => {
-  await api.delete(`/roles/${id}`);
-};
+export const deleteRole = async (id: string): Promise<void> => 
+  api.delete(`/roles/${id}`);
 
-export const getRolePermissions = async (id: string): Promise<Permission[]> => {
-  const response = await api.get<Permission[]>(`/roles/${id}/permissions`);
-  return response.data;
-};
+export const getRolePermissions = async (id: string): Promise<Permission[]> => 
+  api.get(`/roles/${id}/permissions`);
+
+export const getRoleHierarchy = async (): Promise<RoleHierarchy[]> => 
+  api.get('/roles/hierarchy');
+
+export const addRoleHierarchy = async (parentRoleId: string, childRoleId: string): Promise<void> => 
+  api.post('/roles/hierarchy', { parentRoleId, childRoleId });
 
 // Permission APIs
-export const getPermissions = async (page?: number, limit?: number, search?: string): Promise<PaginatedResponse<Permission>> => {
-  const response = await api.get<PaginatedResponse<Permission>>('/permissions', {
+export const getPermissions = async (
+  page?: number, 
+  limit?: number, 
+  search?: string
+): Promise<PaginatedResponse<Permission>> => 
+  api.get('/permissions', {
     params: { page, limit, search }
   });
-  return response.data;
-};
 
-export const getAllPermissions = async (): Promise<Permission[]> => {
-  const response = await api.get<Permission[]>('/permissions');
-  return response.data;
-};
+export const getAllPermissions = async (): Promise<Permission[]> => 
+  api.get('/permissions');
 
-export const getPermissionById = async (id: string): Promise<Permission> => {
-  const response = await api.get<Permission>(`/permissions/${id}`);
-  return response.data;
-};
+export const getPermissionById = async (id: string): Promise<Permission> => 
+  api.get(`/permissions/${id}`);
 
-export const createPermission = async (data: Partial<Permission>): Promise<Permission> => {
-  const response = await api.post<Permission>('/permissions', data);
-  return response.data;
-};
+export const createPermission = async (data: Partial<Permission>): Promise<Permission> => 
+  api.post('/permissions', data);
 
-export const updatePermission = async (id: string, data: Partial<Permission>): Promise<Permission> => {
-  const response = await api.put<Permission>(`/permissions/${id}`, data);
-  return response.data;
-};
+export const updatePermission = async (id: string, data: Partial<Permission>): Promise<Permission> => 
+  api.put(`/permissions/${id}`, data);
 
-export const deletePermission = async (id: string): Promise<void> => {
-  await api.delete(`/permissions/${id}`);
-};
+export const deletePermission = async (id: string): Promise<void> => 
+  api.delete(`/permissions/${id}`);
 
-export const assignPermissionToRole = async (roleId: string, permissionId: string): Promise<void> => {
-  await api.post('/permissions/assign', { roleId, permissionId });
-};
+export const assignPermissionToRole = async (roleId: string, permissionId: string): Promise<void> => 
+  api.post('/permissions/assign', { roleId, permissionId });
 
 export default api;

@@ -1,30 +1,33 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { UserModel } from '../models/User';
+import { getDb } from '../config/database';
 
 export class AuthController {
   async login(req: Request, res: Response) {
     try {
       const { username, password } = req.body;
-      console.log('Login attempt:', { username }); // Log login attempt
+      console.log('Login attempt:', { username });
 
-      // Validate input
-      if (!username || !password) {
-        console.log('Missing credentials');
-        return res.status(400).json({ message: 'Username and password are required' });
-      }
+      const db = await getDb();
+      
+      // Get user with role
+      const user = await db.get(`
+        SELECT u.*, r.name as roleName 
+        FROM users u 
+        JOIN roles r ON u.roleId = r.id 
+        WHERE u.username = ?
+      `, [username]);
 
-      // Find user
-      const user = await UserModel.findByUsername(username);
       if (!user) {
-        console.log('User not found:', username);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
       // Verify password
-      const isValidPassword = await UserModel.comparePassword(user, password);
+      const isValidPassword = await bcrypt.compare(password, user.password);
       console.log('Password validation:', { isValid: isValidPassword });
-      
+
       if (!isValidPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
@@ -32,23 +35,25 @@ export class AuthController {
       // Generate JWT token
       const token = jwt.sign(
         { 
-          id: user.id, 
+          id: user.id,
           username: user.username,
-          roleId: user.roleId 
+          email: user.email,
+          roleId: user.roleId,
+          roleName: user.roleName
         },
         process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '24h' }
       );
 
-      console.log('Login successful:', { username });
-
-      res.json({ 
+      // Return user info and token
+      res.json({
         token,
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
-          roleId: user.roleId
+          roleId: user.roleId,
+          roleName: user.roleName
         }
       });
     } catch (error) {

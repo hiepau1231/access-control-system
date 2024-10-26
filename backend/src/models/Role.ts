@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { openDb } from '../config/database';
+import { getDb } from '../config/database';
 
 export interface Role {
   id: string;
@@ -9,39 +9,52 @@ export interface Role {
 
 export class RoleModel {
   static async create(role: Omit<Role, 'id'>): Promise<Role> {
-    const db = await openDb();
-    const id = uuidv4();
-    
-    await db.run(
-      'INSERT INTO roles (id, name, description) VALUES (?, ?, ?)',
-      [id, role.name, role.description]
-    );
-    
-    await db.close();
-    return { id, ...role };
+    const db = await getDb();
+    try {
+      const id = uuidv4();
+      await db.run(
+        'INSERT INTO roles (id, name, description) VALUES (?, ?, ?)',
+        [id, role.name, role.description]
+      );
+      return { id, ...role };
+    } catch (error) {
+      console.error('Error creating role:', error);
+      throw error;
+    }
   }
 
-  static async findById(id: string): Promise<Role | undefined> {
-    const db = await openDb();
-    const role = await db.get<Role>('SELECT * FROM roles WHERE id = ?', [id]);
-    await db.close();
-    return role;
+  static async findById(id: string): Promise<Role | null> {
+    const db = await getDb();
+    try {
+      return await db.get('SELECT * FROM roles WHERE id = ?', [id]);
+    } catch (error) {
+      console.error('Error finding role:', error);
+      throw error;
+    }
   }
 
   static async getAll(): Promise<Role[]> {
-    const db = await openDb();
-    const roles = await db.all<Role[]>('SELECT * FROM roles');
-    await db.close();
-    return roles;
+    const db = await getDb();
+    try {
+      return await db.all('SELECT * FROM roles');
+    } catch (error) {
+      console.error('Error getting roles:', error);
+      throw error;
+    }
   }
 
-  static async getPermissions(roleId: string): Promise<string[]> {
-    const db = await openDb();
-    const permissions = await db.all<{permissionId: string}[]>(
-      'SELECT permissionId FROM role_permissions WHERE roleId = ?',
-      [roleId]
-    );
-    await db.close();
-    return permissions.map(p => p.permissionId);
+  static async getPermissions(roleId: string): Promise<any[]> {
+    const db = await getDb();
+    try {
+      return await db.all(`
+        SELECT p.* 
+        FROM permissions p
+        JOIN role_permissions rp ON p.id = rp.permissionId
+        WHERE rp.roleId = ?
+      `, [roleId]);
+    } catch (error) {
+      console.error('Error getting role permissions:', error);
+      throw error;
+    }
   }
 }

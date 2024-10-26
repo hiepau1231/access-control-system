@@ -1,27 +1,54 @@
 import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import { open, Database } from 'sqlite';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import fs from 'fs';
 
-export async function openDb() {
-  // Đảm bảo file database tồn tại
-  if (!fs.existsSync('./database.sqlite')) {
-    fs.writeFileSync('./database.sqlite', '');
-  }
+let db: Database | null = null;
 
-  return open({
-    filename: './database.sqlite',
-    driver: sqlite3.Database
-  });
+export async function initDb() {
+  if (!db) {
+    if (!fs.existsSync('./database.sqlite')) {
+      fs.writeFileSync('./database.sqlite', '');
+    }
+
+    db = await open({
+      filename: './database.sqlite',
+      driver: sqlite3.Database
+    });
+
+    // Enable foreign keys
+    await db.run('PRAGMA foreign_keys = ON');
+    
+    // Keep connection alive
+    setInterval(async () => {
+      try {
+        await db?.get('SELECT 1');
+      } catch (error) {
+        console.log('Reconnecting to database...');
+        db = await open({
+          filename: './database.sqlite',
+          driver: sqlite3.Database
+        });
+      }
+    }, 5000);
+  }
+  return db;
+}
+
+export async function getDb() {
+  if (!db) {
+    db = await initDb();
+  }
+  return db;
 }
 
 export async function initializeDatabase() {
-  const db = await openDb();
-
+  const database = await getDb();
+  
   try {
-    // Tạo bảng roles trước vì users có foreign key reference đến roles
-    await db.exec(`
+    // Tạo các bảng...
+    await database.exec(`
       CREATE TABLE IF NOT EXISTS roles (
         id TEXT PRIMARY KEY,
         name TEXT UNIQUE,
@@ -30,7 +57,7 @@ export async function initializeDatabase() {
     `);
 
     // Tạo bảng users
-    await db.exec(`
+    await database.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE,
@@ -42,7 +69,7 @@ export async function initializeDatabase() {
     `);
 
     // Tạo bảng permissions
-    await db.exec(`
+    await database.exec(`
       CREATE TABLE IF NOT EXISTS permissions (
         id TEXT PRIMARY KEY,
         name TEXT UNIQUE,
@@ -51,7 +78,7 @@ export async function initializeDatabase() {
     `);
 
     // Tạo bảng role_permissions
-    await db.exec(`
+    await database.exec(`
       CREATE TABLE IF NOT EXISTS role_permissions (
         roleId TEXT,
         permissionId TEXT,
@@ -62,12 +89,12 @@ export async function initializeDatabase() {
     `);
 
     // Insert default role if it doesn't exist
-    const defaultRole = await db.get('SELECT * FROM roles WHERE name = ?', ['user']);
+    const defaultRole = await database.get('SELECT * FROM roles WHERE name = ?', ['admin']);
     if (!defaultRole) {
-      const roleId = 'default';
-      await db.run(
+      const roleId = uuidv4();
+      await database.run(
         'INSERT INTO roles (id, name, description) VALUES (?, ?, ?)',
-        [roleId, 'user', 'Default user role']
+        [roleId, 'admin', 'Administrator role with full access']
       );
 
       // Create default permissions
@@ -75,37 +102,76 @@ export async function initializeDatabase() {
         { id: uuidv4(), name: 'read:users', description: 'Can read users' },
         { id: uuidv4(), name: 'create:users', description: 'Can create users' },
         { id: uuidv4(), name: 'update:users', description: 'Can update users' },
-        { id: uuidv4(), name: 'delete:users', description: 'Can delete users' }
+        { id: uuidv4(), name: 'delete:users', description: 'Can delete users' },
+        { id: uuidv4(), name: 'read:roles', description: 'Can read roles' },
+        { id: uuidv4(), name: 'create:roles', description: 'Can create roles' },
+        { id: uuidv4(), name: 'update:roles', description: 'Can update roles' },
+        { id: uuidv4(), name: 'delete:roles', description: 'Can delete roles' },
+        { id: uuidv4(), name: 'read:permissions', description: 'Can read permissions' },
+        { id: uuidv4(), name: 'create:permissions', description: 'Can create permissions' },
+        { id: uuidv4(), name: 'update:permissions', description: 'Can update permissions' },
+        { id: uuidv4(), name: 'delete:permissions', description: 'Can delete permissions' }
       ];
 
       for (const perm of permissions) {
-        await db.run(
+        await database.run(
           'INSERT INTO permissions (id, name, description) VALUES (?, ?, ?)',
           [perm.id, perm.name, perm.description]
         );
 
-        // Assign permission to default role
-        await db.run(
+        // Assign permission to admin role
+        await database.run(
           'INSERT INTO role_permissions (roleId, permissionId) VALUES (?, ?)',
           [roleId, perm.id]
         );
       }
 
-      // Create a default admin user
+      // Create admin user with password: admin123
       const adminPassword = await bcrypt.hash('admin123', 10);
-      await db.run(
-        'INSERT OR IGNORE INTO users (id, username, email, password, roleId) VALUES (?, ?, ?, ?, ?)',
-        [uuidv4(), 'admin', 'admin@example.com', adminPassword, roleId]
+      const adminId = uuidv4();
+      await database.run(
+        'INSERT INTO users (id, username, email, password, roleId) VALUES (?, ?, ?, ?, ?)',
+        [adminId, 'admin', 'admin@example.com', adminPassword, roleId]
       );
 
-      console.log('Default role, permissions and admin user created');
+      console.log('Admin role, permissions and admin user created');
     }
 
     console.log('Database initialized successfully');
+
+    await database.exec(`
+      CREATE TABLE IF NOT EXISTS role_hierarchy (
+        parent_role_id TEXT NOT NULL,
+        child_role_id TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (parent_role_id, child_role_id),
+        FOREIGN KEY (parent_role_id) REFERENCES roles(id) ON DELETE CASCADE,
+        FOREIGN KEY (child_role_id) REFERENCES roles(id) ON DELETE CASCADE
+      );
+    `);
   } catch (error) {
     console.error('Database initialization error:', error);
     throw error;
-  } finally {
-    await db.close();
   }
 }
+
+// Cleanup function for graceful shutdown
+process.on('SIGINT', async () => {
+  try {
+    if (db) {
+      await db.close();
+      console.log('Database connection closed.');
+    }
+  } catch (error) {
+    console.error('Error closing database:', error);
+  } finally {
+    process.exit(0);
+  }
+});
+
+// Export functions
+export default {
+  getDb,
+  initDb,
+  initializeDatabase
+};

@@ -5,6 +5,7 @@ import RegisterPage from './pages/register/RegisterPage';
 import UserManagement from './components/user/UserManagement';
 import RoleManagement from './components/role/RoleManagement';
 import PermissionManagement from './components/permission/PermissionManagement';
+import { RoleHierarchyManagement } from './components/role/RoleHierarchyManagement';
 import MainLayout from './components/layout/MainLayout';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -27,6 +28,7 @@ const App: React.FC = () => {
           <Route path="/users" element={<PrivateRoute element={<UserManagement />} />} />
           <Route path="/roles" element={<PrivateRoute element={<RoleManagement />} />} />
           <Route path="/permissions" element={<PrivateRoute element={<PermissionManagement />} />} />
+          <Route path="/roles/hierarchy" element={<PrivateRoute element={<RoleHierarchyManagement />} />} />
         </Routes>
       </Router>
     </ThemeProvider>

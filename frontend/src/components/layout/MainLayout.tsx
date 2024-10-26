@@ -8,8 +8,10 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Link } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
 
@@ -48,6 +50,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: '/permissions',
       icon: <SafetyCertificateOutlined />,
       label: 'Permissions',
+    },
+    {
+      key: '/roles/hierarchy',
+      icon: <TeamOutlined />,
+      label: 'Role Hierarchy',
     },
     {
       key: 'logout',

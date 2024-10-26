@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
-import { openDb } from '../config/database';
+import { getDb } from '../config/database';
 
 export interface User {
   id: string;
@@ -11,43 +11,54 @@ export interface User {
 }
 
 export class UserModel {
-  static async create(user: Omit<User, 'id'>): Promise<User> {
-    const db = await openDb();
-    const id = uuidv4();
-    const hashedPassword = await bcrypt.hash(user.password, 10);
-    
-    await db.run(
-      'INSERT INTO users (id, username, email, password, roleId) VALUES (?, ?, ?, ?, ?)',
-      [id, user.username, user.email, hashedPassword, user.roleId]
-    );
-    
-    await db.close();
-    return { id, ...user, password: hashedPassword };
-  }
-
-  static async findByUsername(username: string): Promise<User | undefined> {
-    const db = await openDb();
-    const user = await db.get<User>('SELECT * FROM users WHERE username = ?', [username]);
-    await db.close();
-    return user;
-  }
-
-  static async findById(id: string): Promise<User | undefined> {
-    const db = await openDb();
-    const user = await db.get<User>('SELECT * FROM users WHERE id = ?', [id]);
-    await db.close();
-    return user;
-  }
-
   static async getAll(): Promise<User[]> {
-    const db = await openDb();
-    const users = await db.all<User[]>('SELECT * FROM users');
-    await db.close();
-    return users;
+    const db = await getDb();
+    try {
+      return await db.all('SELECT * FROM users');
+    } catch (error) {
+      console.error('Error getting users:', error);
+      throw error;
+    }
+  }
+
+  static async findById(id: string): Promise<User | null> {
+    const db = await getDb();
+    try {
+      return await db.get('SELECT * FROM users WHERE id = ?', [id]);
+    } catch (error) {
+      console.error('Error finding user:', error);
+      throw error;
+    }
+  }
+
+  static async findByUsername(username: string): Promise<User | null> {
+    const db = await getDb();
+    try {
+      return await db.get('SELECT * FROM users WHERE username = ?', [username]);
+    } catch (error) {
+      console.error('Error finding user:', error);
+      throw error;
+    }
+  }
+
+  static async create(data: Omit<User, 'id'>): Promise<User> {
+    const db = await getDb();
+    try {
+      const id = uuidv4();
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+      await db.run(
+        'INSERT INTO users (id, username, email, password, roleId) VALUES (?, ?, ?, ?, ?)',
+        [id, data.username, data.email, hashedPassword, data.roleId]
+      );
+      return { id, ...data };
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
   }
 
   static async update(id: string, updates: Partial<User>): Promise<void> {
-    const db = await openDb();
+    const db = await getDb();
     const { username, email, password, roleId } = updates;
     
     if (password) {
@@ -67,7 +78,7 @@ export class UserModel {
   }
 
   static async delete(id: string): Promise<void> {
-    const db = await openDb();
+    const db = await getDb();
     await db.run('DELETE FROM users WHERE id = ?', [id]);
     await db.close();
   }
