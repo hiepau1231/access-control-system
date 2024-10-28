@@ -6,21 +6,27 @@
 1. Auth
    - LoginForm.tsx: Form đăng nhập
    - RegisterForm.tsx: Form đăng ký
+   - TwoFactorSetup.tsx: Thiết lập xác thực 2 yếu tố
 
 2. Common
    - Button.tsx: Component button tái sử dụng
    - LoadingIndicator.tsx: Component loading
+   - Navigation.tsx: Thanh điều hướng
+   - VirtualTable.tsx: Bảng dữ liệu với virtual scrolling
 
 3. Layout
    - MainLayout.tsx: Layout chính với sidebar và header, dark/light mode
+   - ErrorBoundary.tsx: Xử lý lỗi component
 
 4. Role & Permission
    - RoleManagement.tsx: Quản lý vai trò
    - RoleHierarchyManagement.tsx: Quản lý phân cấp vai trò
    - PermissionManagement.tsx: Quản lý quyền
+   - RoleHierarchyErrorBoundary.tsx: Xử lý lỗi cho hierarchy
 
 5. User
    - UserManagement.tsx: Quản lý người dùng
+   - AccessManagement.tsx: Quản lý quyền truy cập
 
 ### Services
 - api.ts: API calls với TypeScript interfaces và error handling
@@ -55,7 +61,7 @@
    - User management theo role
 
 3. RoleController
-   - Role CRUD
+   - Role CRUD với permission validation
    - Role hierarchy management
    - Permission assignment
    - Circular dependency prevention
@@ -72,48 +78,49 @@
    - Token validation
 
 2. checkPermission
-   - RBAC authorization
+   - RBAC authorization với format action:resource
    - Permission validation
    - Role hierarchy checks
    - Support cho multiple permissions
+   - Automatic admin role detection
 
-### Models
-1. User
-   - User CRUD operations
-   - Password hashing với bcrypt
-   - Role assignment
-   - Error handling
+### Config
+1. database.ts
+   - Database initialization
+   - Schema management
+   - Default data seeding
 
-2. Role
-   - Role operations
-   - Hierarchy management
+2. permissions.ts
    - Permission management
-   - Circular dependency checks
+   - Automatic permission creation
+   - Admin role permission assignment
 
-3. Permission
-   - Permission operations
-   - Role assignment
-   - Permission validation
+### Types
+1. express/index.d.ts
+   - Custom type definitions
+   - Request user augmentation
 
 ## Tính năng đã hoàn thành
 1. Authentication với JWT
 2. RBAC với role hierarchy
 3. User Management với permission checks
 4. Role Management với circular dependency prevention
-5. Permission Management
+5. Permission Management với format action:resource
 6. Dark/Light mode
 7. Error handling và validation
+8. Role Hierarchy visualization
+9. Error boundaries
+10. Loading states
 
 ## Đang phát triển
-1. Role Hierarchy visualization
-2. Error boundaries
-3. Loading states
-4. Performance optimization
-5. Security enhancements
+1. Data encryption
+2. Performance optimization
+3. Security enhancements
+4. Caching implementation
 
 ## Kế hoạch phát triển
-1. Data encryption
+1. Data encryption với Secret Key
 2. Audit logging
-3. Advanced role hierarchy visualization
-4. Caching và performance optimization
-5. Security hardening
+3. Caching và performance optimization
+4. Security hardening
+5. Rate limiting
