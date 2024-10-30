@@ -1,6 +1,6 @@
 # Tổng quan về Codebase
 
-## Cấu trúc thư mục
+## Cấu trúc thư mục hiện tại
 
 ```
 project/
@@ -23,7 +23,8 @@ project/
 │   │   │   └── register/
 │   │   │       └── RegisterPage.tsx
 │   │   ├── services/
-│   │   │   └── auth.ts
+│   │   │   ├── auth.ts
+│   │   │   └── api.ts
 │   │   └── index.tsx
 │   ├── package.json
 │   └── package-lock.json
