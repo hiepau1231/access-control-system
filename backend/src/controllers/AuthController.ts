@@ -1,32 +1,39 @@
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { db } from '../config/database';
+import jwt from 'jsonwebtoken';
+import { AppDataSource } from '../config/database';
+import { User } from '../models/User';
 
 export const login = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
+    console.log('Login attempt:', { username });
 
-    // Kiểm tra user tồn tại
-    const user = await db.get('SELECT * FROM users WHERE username = ?', [username]);
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({ 
+      where: { username },
+      relations: ['role']
+    });
+
     if (!user) {
-      return res.status(401).json({ message: 'Invalid username or password' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Kiểm tra password
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ message: 'Invalid username or password' });
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Tạo JWT token
     const token = jwt.sign(
-      { id: user.id, username: user.username, roleId: user.roleId },
+      { id: user.id, username: user.username },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '1d' }
     );
 
-    // Trả về response
     res.json({
       token,
       user: {

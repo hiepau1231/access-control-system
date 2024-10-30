@@ -1,55 +1,50 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
-import bcrypt from 'bcrypt';
+import { DataSource } from 'typeorm';
+import path from 'path';
+import { User } from '../models/User';
+import { Role } from '../models/Role';
+import { Permission } from '../models/Permission';
 
-export const initializeDatabase = async () => {
-  const db = await open({
-    filename: './data/database.sqlite',
-    driver: sqlite3.Database
-  });
-
-  // Create tables if they don't exist
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS roles (
-      id TEXT PRIMARY KEY,
-      name TEXT UNIQUE NOT NULL,
-      description TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      username TEXT UNIQUE NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      roleId TEXT,
-      FOREIGN KEY (roleId) REFERENCES roles(id)
-    );
-  `);
-
-  // Insert default roles if they don't exist
-  await db.run(`
-    INSERT OR IGNORE INTO roles (id, name, description)
-    VALUES 
-      ('1', 'admin', 'Administrator'),
-      ('2', 'user', 'Regular user')
-  `);
-
-  // Create default admin user if not exists
-  const adminExists = await db.get('SELECT * FROM users WHERE username = ?', ['admin']);
-  if (!adminExists) {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    await db.run(`
-      INSERT INTO users (id, username, email, password, roleId)
-      VALUES (?, ?, ?, ?, ?)
-    `, ['1', 'admin', 'admin@example.com', hashedPassword, '1']);
-    console.log('Default admin user created');
-  }
-
-  return db;
-};
-
-export let db: Awaited<ReturnType<typeof initializeDatabase>>;
+export const AppDataSource = new DataSource({
+  type: 'sqlite',
+  database: path.join(__dirname, '../../data/database.sqlite'),
+  entities: [User, Role, Permission],
+  synchronize: true,
+  logging: true
+});
 
 export const setupDatabase = async () => {
-  db = await initializeDatabase();
+  try {
+    await AppDataSource.initialize();
+    console.log('Database initialized');
+
+    // Seed default role if not exists
+    const roleRepository = AppDataSource.getRepository(Role);
+    let userRole = await roleRepository.findOne({ where: { name: 'user' } });
+    if (!userRole) {
+      userRole = await roleRepository.save({
+        name: 'user',
+        description: 'Default user role'
+      });
+      console.log('Default role created');
+    }
+
+    // Seed test user if not exists
+    const userRepository = AppDataSource.getRepository(User);
+    const testUser = await userRepository.findOne({ where: { username: 'test' } });
+    if (!testUser) {
+      const bcrypt = require('bcrypt');
+      const hashedPassword = await bcrypt.hash('test', 10);
+      await userRepository.save({
+        username: 'test',
+        password: hashedPassword,
+        email: 'test@example.com',
+        roleId: userRole.id
+      });
+      console.log('Test user created with role:', userRole.name);
+    }
+
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    throw error;
+  }
 };

@@ -1,89 +1,61 @@
-import React from 'react';
-import { Form, Input, Button } from 'antd';
+import { BaseAuthForm } from './BaseAuthForm';
+import { useAuth } from '../../hooks/useAuth';
 import { Link } from 'react-router-dom';
+import { RegisterData } from '../../services/auth';
+import { Rule } from 'antd/lib/form';
 
-interface RegisterFormProps {
-  onRegister: (values: any) => Promise<void>;
-}
+export const RegisterForm = () => {
+  const { register, isLoading } = useAuth();
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
-  const [form] = Form.useForm();
-
-  const onFinish = async (values: any) => {
+  const handleSubmit = async (values: RegisterData) => {
     try {
-      await onRegister(values);
+      await register(values);
     } catch (error) {
-      console.error('Registration error details:', error);
+      console.error('Registration failed:', error);
+      throw error;
     }
   };
 
+  const fields: Array<{
+    name: string;
+    label: string;
+    rules: Rule[];
+    type?: string;
+  }> = [
+    {
+      name: 'username',
+      label: 'Username',
+      rules: [{ required: true, message: 'Please input your username!' }] as Rule[]
+    },
+    {
+      name: 'email',
+      label: 'Email',
+      type: 'email',
+      rules: [
+        { required: true, message: 'Please input your email!' },
+        { type: 'email', message: 'Please enter a valid email!' }
+      ] as Rule[]
+    },
+    {
+      name: 'password',
+      label: 'Password',
+      type: 'password',
+      rules: [{ required: true, message: 'Please input your password!' }] as Rule[]
+    }
+  ];
+
   return (
-    <Form
-      form={form}
-      name="register"
-      onFinish={onFinish}
-      layout="vertical"
-      requiredMark={false}
-    >
-      <Form.Item
-        name="username"
-        label="Username"
-        rules={[{ required: true, message: 'Please input your username!' }]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        name="email"
-        label="Email"
-        rules={[
-          { required: true, message: 'Please input your email!' },
-          { type: 'email', message: 'Please enter a valid email!' }
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
-        name="password"
-        label="Password"
-        rules={[
-          { required: true, message: 'Please input your password!' },
-          { min: 6, message: 'Password must be at least 6 characters!' }
-        ]}
-      >
-        <Input.Password />
-      </Form.Item>
-
-      <Form.Item
-        name="confirmPassword"
-        label="Confirm Password"
-        dependencies={['password']}
-        rules={[
-          { required: true, message: 'Please confirm your password!' },
-          ({ getFieldValue }) => ({
-            validator(_, value) {
-              if (!value || getFieldValue('password') === value) {
-                return Promise.resolve();
-              }
-              return Promise.reject(new Error('Passwords do not match!'));
-            },
-          }),
-        ]}
-      >
-        <Input.Password />
-      </Form.Item>
-
-      <Form.Item>
-        <Button type="primary" htmlType="submit" className="w-full">
-          Register
-        </Button>
-      </Form.Item>
-
-      <div className="text-center">
-        Already have an account? <Link to="/login">Login here</Link>
-      </div>
-    </Form>
+    <BaseAuthForm<RegisterData>
+      onSubmit={handleSubmit}
+      submitText="Register"
+      fields={fields}
+      loading={isLoading}
+      extra={
+        <div className="text-center">
+          <Link to="/login">Already have an account? Login</Link>
+        </div>
+      }
+    />
   );
 };
 

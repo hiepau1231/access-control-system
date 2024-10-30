@@ -1,44 +1,47 @@
 import React from 'react';
 import { Menu } from 'antd';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { Link } from 'react-router-dom';
 import type { MenuProps } from 'antd';
+import { useAuth } from '../../hooks';
 
-interface CustomMenuItem {
-  key: string;
-  label: JSX.Element;
-}
+export const Navigation = (): JSX.Element => {
+  const { isAuthenticated, logout } = useAuth();
 
-export const Navigation: React.FC = () => {
-  const location = useLocation();
-  const { user, hasPermission } = useAuth();
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    logout();
+  };
 
-  const menuItems = [
+  const items: MenuProps['items'] = [
     {
-      key: 'dashboard',
-      label: <Link to="/dashboard">Dashboard</Link>,
+      key: 'home',
+      label: <Link to="/">Home</Link>
     },
-    hasPermission('read:users') ? {
-      key: 'users',
-      label: <Link to="/users">User Management</Link>,
-    } : null,
-    hasPermission('read:roles') ? {
-      key: 'roles',
-      label: <Link to="/roles">Role Management</Link>,
-    } : null,
-    hasPermission('read:permissions') ? {
-      key: 'permissions',
-      label: <Link to="/permissions">Permission Management</Link>,
-    } : null,
-  ].filter((item): item is CustomMenuItem => item !== null);
+    ...(isAuthenticated ? [
+      {
+        key: 'users',
+        label: <Link to="/users">Users</Link>
+      },
+      {
+        key: 'roles',
+        label: <Link to="/roles">Roles</Link>
+      },
+      {
+        key: 'permissions',
+        label: <Link to="/permissions">Permissions</Link>
+      },
+      {
+        key: 'logout',
+        label: <a onClick={handleLogout} href="#">Logout</a>
+      }
+    ] : [
+      {
+        key: 'login',
+        label: <Link to="/login">Login</Link>
+      }
+    ])
+  ];
 
-  return (
-    <Menu
-      mode="horizontal"
-      selectedKeys={[location.pathname.split('/')[1] || 'dashboard']}
-      items={menuItems}
-      className="border-b"
-    />
-  );
+  return <Menu mode="horizontal" items={items} />;
 };
 

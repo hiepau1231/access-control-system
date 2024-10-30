@@ -1,75 +1,70 @@
-import React, { createContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { message } from 'antd';
-import { getStoredToken, removeStoredToken, setStoredToken } from '../utils/token';
-import { verifyToken } from '../services/auth';
+import React, { createContext, useState, useContext } from 'react';
+import { User } from '../services/api';
+import { authService, LoginCredentials, RegisterData } from '../services/auth';
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  roleId: string;
-}
-
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
-  hasPermission: (permission: string) => boolean;
-  login: (userData: { token: string; user: User }) => void;
-  logout: () => void;
-  loading: boolean;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Verify token on mount
-  useEffect(() => {
-    const verifyAuth = async () => {
-      try {
-        const token = getStoredToken();
-        if (token) {
-          const userData = await verifyToken(token);
-          setUser(userData);
-        }
-      } catch (error) {
-        message.error('Session expired. Please login again.');
-        removeStoredToken();
-      } finally {
-        setLoading(false);
-      }
-    };
+  const login = async (username: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const response = await authService.login({ username, password });
+      setUser(response.user);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    verifyAuth();
-  }, []);
+  const register = async (data: RegisterData) => {
+    try {
+      setIsLoading(true);
+      const response = await authService.register(data);
+      setUser(response.user);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const hasPermission = useCallback((permission: string) => {
-    // Implement permission check logic here
-    return !!user;
-  }, [user]);
+  const logout = async () => {
+    try {
+      setIsLoading(true);
+      await authService.logout();
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const login = useCallback((data: { token: string; user: User }) => {
-    setStoredToken(data.token);
-    setUser(data.user);
-  }, []);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    removeStoredToken();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  const value: AuthContextType = {
+    user,
+    isLoading,
+    login,
+    register,
+    logout
+  };
 
   return (
-    <AuthContext.Provider value={{ user, hasPermission, login, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }; 

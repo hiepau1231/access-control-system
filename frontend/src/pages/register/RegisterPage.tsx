@@ -1,40 +1,20 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import RegisterForm from '../../components/auth/RegisterForm';
-import { Card, message } from 'antd';
+import { Card } from 'antd';
 import { useTheme } from '../../contexts/ThemeContext';
-import { register } from '../../services/api';
-
-interface RegisterValues {
-  username: string;
-  email: string;
-  password: string;
-}
+import { useAuth } from '../../hooks/useAuth';
+import { RegisterForm } from '../../components/auth/RegisterForm';
 
 const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
   const { isDarkMode } = useTheme();
-
-  const handleRegister = async (values: RegisterValues) => {
-    try {
-      const { username, email, password } = values;
-      await register(username, email, password);
-      message.success('Registration successful!');
-      navigate('/login');
-    } catch (error) {
-      message.error('Registration failed!');
-      console.error('Registration error:', error);
-    }
-  };
+  const { register, isLoading } = useAuth();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card
         title="Register"
-        bordered={false}
         className={`w-full max-w-md ${isDarkMode ? 'bg-gray-800 text-white' : ''}`}
       >
-        <RegisterForm onRegister={handleRegister} />
+        <RegisterForm />
       </Card>
     </div>
   );

@@ -1,104 +1,172 @@
-# Technology Stack
+# Tech Stack Documentation
 
-## Frontend
+## Frontend Technologies
+
 ### Core
-- **React 18.2.0**: Framework JavaScript cho UI
-- **TypeScript 4.9.5**: Ngôn ngữ lập trình type-safe
-- **Vite 4.4.0**: Build tool và dev server
+- **React 18**: Framework UI chính
+- **TypeScript 5.0+**: Ngôn ngữ lập trình với type safety
+- **Vite**: Build tool và development server
 
 ### UI/Styling
-- **Ant Design 5.8.3**: UI component library
-- **TailwindCSS 3.3.3**: Utility-first CSS framework
-- **@emotion/styled 11.11.0**: CSS-in-JS solution
-- **@ant-design/icons 5.2.5**: Icon library
+- **Ant Design (AntD) 5.0+**: UI component library
+  - Form handling
+  - Data display components
+  - Layout components
+  - Navigation components
+- **TailwindCSS 3**: Utility-first CSS framework
+  - Custom styling
+  - Responsive design
+  - Dark mode support
 
 ### State Management & Data Fetching
-- **Redux Toolkit 1.9.5**: State management
-- **React Query 4.3.0**: Server state management và data fetching
-- **Axios 1.4.0**: HTTP client
+- **React Context**: Global state management
+- **Axios**: HTTP client
+  - API calls
+  - Request/Response interceptors
+  - Error handling
 
-### Form Handling
-- **Formik 2.4.3**: Form management
-- **Yup 1.2.0**: Form validation
-
-### Routing
-- **React Router DOM 6.14.2**: Client-side routing
+### Authentication
+- **JWT**: Token-based authentication
+- **HTTP-only cookies**: Token storage
+- **Role-based access control (RBAC)**
 
 ### Development Tools
-- **ESLint 8.45.0**: Linting tool
-- **Prettier 3.0.0**: Code formatter
-- **Husky 8.0.3**: Git hooks
+- **ESLint**: Code linting
+- **Prettier**: Code formatting
+- **Husky**: Git hooks
+- **Jest**: Unit testing
+- **React Testing Library**: Component testing
 
-## Backend
+## Backend Technologies
+
 ### Core
-- **Node.js 18.x**: Runtime environment
-- **Express 4.18.2**: Web framework
-- **TypeScript 4.9.5**: Type-safe programming
+- **Node.js 18+**: Runtime environment
+- **TypeScript**: Type-safe development
+- **Express.js**: Web framework
+  - Routing
+  - Middleware
+  - Error handling
 
 ### Database
-- **SQLite3 5.1.6**: Database engine
-- **Prisma 5.1.1**: ORM và database toolkit
-- **Redis 4.6.7**: Caching layer
+- **SQLite**: Lightweight SQL database
+- **TypeORM**: ORM for database operations
+  - Entity management
+  - Migration support
+  - Relationship handling
 
 ### Authentication & Security
-- **JWT 9.0.1**: JSON Web Tokens
-- **bcrypt 5.1.0**: Password hashing
-- **helmet 7.0.0**: Security headers
-- **cors 2.8.5**: CORS middleware
+- **jsonwebtoken**: JWT implementation
+- **bcrypt**: Password hashing
+- **helmet**: Security headers
+- **cors**: Cross-origin resource sharing
+- **express-rate-limit**: Rate limiting
 
-### Validation & Error Handling
-- **express-validator 7.0.1**: Request validation
-- **winston 3.10.0**: Logging
-- **http-errors 2.0.0**: HTTP error handling
+### Validation & Types
+- **zod**: Runtime type validation
+- **TypeScript**: Static type checking
+- **express-validator**: Request validation
 
 ### Development Tools
-- **nodemon 3.0.1**: Development server
-- **ts-node 10.9.1**: TypeScript execution
-- **jest 29.6.2**: Testing framework
-- **supertest 6.3.3**: HTTP testing
+- **nodemon**: Development server
+- **ts-node**: TypeScript execution
+- **Jest**: Unit testing
+- **Supertest**: API testing
 
-## DevOps & Deployment
+## Development & Deployment
+
 ### Version Control
 - **Git**: Source control
 - **GitHub**: Repository hosting
 
-### CI/CD
-- **GitHub Actions**: Continuous Integration
-- **Docker 24.0.5**: Containerization
-- **Docker Compose 2.20.2**: Multi-container management
+### Code Quality
+- **ESLint**: Linting
+- **Prettier**: Formatting
+- **TypeScript**: Type checking
+- **Husky**: Pre-commit hooks
 
-### Monitoring & Logging
-- **PM2 5.3.0**: Process manager
-- **Winston**: Application logging
-- **Morgan 1.10.0**: HTTP request logging
+### Testing
+- **Jest**: Testing framework
+- **React Testing Library**: Frontend testing
+- **Supertest**: Backend API testing
 
-## Development Environment
-- **VS Code**: IDE
-- **npm**: Package manager
-- **nvm**: Node version manager
+### Documentation
+- **TSDoc**: TypeScript documentation
+- **Swagger/OpenAPI**: API documentation
+- **Markdown**: Project documentation
 
-## Testing Tools
+### Planned Additions
+1. **Security**
+   - Data encryption
+   - Two-factor authentication
+   - Advanced rate limiting
+
+2. **Performance**
+   - Redis caching
+   - API response optimization
+   - Bundle size optimization
+
+3. **Monitoring**
+   - Error tracking
+   - Performance monitoring
+   - User analytics
+
+## Development Environment Requirements
+
+### Required Software
+- Node.js 18+
+- npm 8+ or yarn 1.22+
+- Git 2.3+
+- VS Code (recommended)
+
+### VS Code Extensions
+- ESLint
+- Prettier
+- TypeScript and JavaScript Language Features
+- Tailwind CSS IntelliSense
+- GitLens
+- Error Lens
+
+### Environment Variables
+```env
+# Frontend
+VITE_API_URL=http://localhost:3000
+VITE_JWT_SECRET=your-jwt-secret
+
+# Backend
+PORT=3000
+NODE_ENV=development
+JWT_SECRET=your-jwt-secret
+DATABASE_URL=./data/database.sqlite
+```
+
+## Performance Considerations
+
 ### Frontend
-- **Jest**: Unit testing
-- **React Testing Library**: Component testing
-- **Cypress**: E2E testing
+- Code splitting
+- Lazy loading
+- Memoization
+- Virtual scrolling for large lists
+- Image optimization
 
 ### Backend
-- **Jest**: Unit testing
-- **Supertest**: API testing
+- Response caching
+- Database query optimization
+- Connection pooling
+- Rate limiting
+- Compression
 
-## Performance & Optimization
-- **React.lazy()**: Code splitting
-- **Compression**: Response compression
-- **Redis**: Caching layer
-- **PM2**: Load balancing
+## Security Measures
 
-## Security Features
-- **JWT**: Authentication
-- **bcrypt**: Password hashing
-- **helmet**: Security headers
-- **CORS**: Cross-origin resource sharing
-- **Rate limiting**: API protection
-- **Input validation**: Request validation
-- **SQL injection protection**: Via Prisma ORM
-- **XSS protection**: Via helmet 
+### Implemented
+- JWT authentication
+- Password hashing
+- CORS configuration
+- Input validation
+- RBAC
+
+### Planned
+- Data encryption
+- Two-factor authentication
+- Security headers
+- Rate limiting
+- Audit logging

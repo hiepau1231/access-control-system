@@ -60,7 +60,7 @@ export const RoleHierarchyManagement: React.FC = () => {
     }
 
     const existingHierarchy = hierarchy.find(
-      h => h.parent_role === selectedParent && h.child_role === selectedChild
+      h => h.parentRoleId === selectedParent && h.childRoleId === selectedChild
     );
     if (existingHierarchy) {
       message.error('Mối quan hệ phân cấp này đã tồn tại');
@@ -189,7 +189,7 @@ export const RoleHierarchyManagement: React.FC = () => {
           }
         ]}
         dataSource={hierarchy}
-        rowKey={(record) => `${record.parent_role}-${record.child_role}`}
+        rowKey={(record) => `${record.parentRoleId}-${record.childRoleId}`}
         loading={loading}
         pagination={{
           showSizeChanger: true,
