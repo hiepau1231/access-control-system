@@ -169,4 +169,4 @@ DATABASE_URL=./data/database.sqlite
 - Two-factor authentication
 - Security headers
 - Rate limiting
-- Audit logging 
+- Audit logging

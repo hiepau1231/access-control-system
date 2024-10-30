@@ -3,6 +3,7 @@ import { Result, Button } from 'antd';
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
 }
 
 interface State {
@@ -10,7 +11,7 @@ interface State {
   error: Error | null;
 }
 
-export class RoleHierarchyErrorBoundary extends Component<Props, State> {
+export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null
@@ -21,19 +22,23 @@ export class RoleHierarchyErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Role Hierarchy Error:', error, errorInfo);
+    console.error('Uncaught error:', error, errorInfo);
   }
 
   public render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
       return (
         <Result
           status="error"
-          title="Role Hierarchy Error"
-          subTitle={this.state.error?.message || 'An error occurred while managing role hierarchy'}
+          title="Something went wrong"
+          subTitle={this.state.error?.message}
           extra={[
-            <Button type="primary" onClick={() => this.setState({ hasError: false, error: null })} key="retry">
-              Retry
+            <Button type="primary" onClick={() => window.location.reload()} key="reload">
+              Reload Page
             </Button>
           ]}
         />
@@ -42,4 +47,4 @@ export class RoleHierarchyErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
-}
+} 

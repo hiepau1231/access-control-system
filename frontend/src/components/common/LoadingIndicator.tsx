@@ -1,17 +1,27 @@
 import React from 'react';
 import { Spin } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 
 interface LoadingIndicatorProps {
-  loading: boolean;
-  children: React.ReactNode;
+  size?: 'small' | 'default' | 'large';
+  tip?: string;
+  fullScreen?: boolean;
 }
 
-const LoadingIndicator: React.FC<LoadingIndicatorProps> = React.memo(({ loading, children }) => {
-  return (
-    <Spin spinning={loading} tip="Loading...">
-      {children}
-    </Spin>
-  );
-});
+export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
+  size = 'default',
+  tip = 'Loading...',
+  fullScreen = false,
+}) => {
+  const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
 
-export default LoadingIndicator;
+  if (fullScreen) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <Spin indicator={antIcon} size={size} tip={tip} />
+      </div>
+    );
+  }
+
+  return <Spin indicator={antIcon} size={size} tip={tip} />;
+};
