@@ -2,9 +2,16 @@ import React, { Component, ErrorInfo } from 'react';
 import { Button, Result } from 'antd';
 import { ReloadOutlined, BugOutlined } from '@ant-design/icons';
 
+interface FallbackProps {
+  error: Error | null;
+  resetError: () => void;
+}
+
+type FallbackComponent = React.ComponentType<FallbackProps>;
+
 interface Props {
   children: React.ReactNode;
-  fallback?: React.ReactNode;
+  fallback?: FallbackComponent;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
@@ -63,7 +70,8 @@ class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       // Check for custom fallback
       if (this.props.fallback) {
-        return this.props.fallback;
+        const FallbackComponent = this.props.fallback;
+        return <FallbackComponent error={this.state.error} resetError={this.handleReset} />;
       }
 
       // Default error UI

@@ -11,6 +11,7 @@ export const login = async (req: Request, res: Response) => {
     console.log('Login attempt:', { username });
 
     if (!username || !password) {
+      console.log('Login failed: Missing username or password');
       return res.status(400).json({ message: 'Username and password are required' });
     }
 
@@ -21,11 +22,15 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
+      console.log('Login failed: User not found', { username });
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    console.log('User found:', { userId: user.id, username: user.username });
+
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
+      console.log('Login failed: Invalid password', { userId: user.id, username: user.username });
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -34,6 +39,8 @@ export const login = async (req: Request, res: Response) => {
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '1d' }
     );
+
+    console.log('Login successful:', { userId: user.id, username: user.username });
 
     res.json({
       token,
@@ -100,6 +107,8 @@ export const register = async (req: Request, res: Response) => {
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '1d' }
     );
+
+    console.log('Registration successful:', { userId: user.id, username: user.username });
 
     // Return same response structure as login
     res.status(201).json({

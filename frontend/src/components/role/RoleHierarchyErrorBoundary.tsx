@@ -10,12 +10,12 @@ import { useNavigate } from 'react-router-dom';
 
 const { Paragraph, Text } = Typography;
 
-interface RoleHierarchyErrorProps {
-  error: Error;
+interface FallbackProps {
+  error: Error | null;
   resetError: () => void;
 }
 
-const RoleHierarchyError: React.FC<RoleHierarchyErrorProps> = ({ error, resetError }) => {
+const RoleHierarchyError: React.FC<FallbackProps> = ({ error, resetError }) => {
   const navigate = useNavigate();
 
   const handleBackToRoles = () => {
@@ -23,7 +23,15 @@ const RoleHierarchyError: React.FC<RoleHierarchyErrorProps> = ({ error, resetErr
   };
 
   // Common role hierarchy errors and their user-friendly messages
-  const getErrorMessage = (error: Error) => {
+  const getErrorMessage = (error: Error | null) => {
+    if (!error) {
+      return {
+        title: 'Unknown Error',
+        subTitle: 'An unknown error occurred.',
+        solution: 'Please try again or contact support.'
+      };
+    }
+
     const errorMessage = error.message.toLowerCase();
     
     if (errorMessage.includes('circular')) {
@@ -73,7 +81,7 @@ const RoleHierarchyError: React.FC<RoleHierarchyErrorProps> = ({ error, resetErr
           <Paragraph type="secondary">
             Suggested Solution: {errorDetails.solution}
           </Paragraph>
-          {process.env.NODE_ENV === 'development' && (
+          {process.env.NODE_ENV === 'development' && error && (
             <div className="mt-4">
               <details className="cursor-pointer">
                 <summary className="text-blue-500 hover:text-blue-700">
@@ -112,9 +120,7 @@ const RoleHierarchyError: React.FC<RoleHierarchyErrorProps> = ({ error, resetErr
 const RoleHierarchyErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <ErrorBoundary
-      fallback={({ error, resetError }: { error: Error; resetError: () => void }) => (
-        <RoleHierarchyError error={error} resetError={resetError} />
-      )}
+      fallback={RoleHierarchyError}
       onError={(error, errorInfo) => {
         // Log to error reporting service
         console.error('Role Hierarchy Error:', error);

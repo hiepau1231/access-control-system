@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { getToken, setToken, removeToken } from '../utils/token';
 
 // Get API URL from environment variables with fallback
@@ -44,8 +44,14 @@ authApi.interceptors.request.use((config) => {
 // Add response interceptor for error handling
 authApi.interceptors.response.use(
   (response) => response,
-  (error) => {
-    console.error('API Error:', error.response?.data || error.message);
+  (error: AxiosError) => {
+    if (error.response) {
+      console.error('API Error:', error.response.status, error.response.data);
+    } else if (error.request) {
+      console.error('No response received:', error.request);
+    } else {
+      console.error('Error setting up request:', error.message);
+    }
     throw error;
   }
 );
@@ -54,12 +60,23 @@ authApi.interceptors.response.use(
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      console.log('Attempting login with credentials:', credentials);
       const response = await authApi.post('/api/auth/login', credentials);
+      console.log('Login response:', response.data);
       const { token, user } = response.data;
       setToken(token);
       return { token, user };
     } catch (error) {
-      console.error('Login failed:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          console.error('Login failed: Invalid credentials');
+          throw new Error('Invalid username or password');
+        } else {
+          console.error('Login failed:', error.response?.data || error.message);
+        }
+      } else {
+        console.error('An unexpected error occurred during login:', error);
+      }
       throw error;
     }
   },
@@ -77,11 +94,7 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    try {
-      await authApi.post('/api/auth/logout');
-    } finally {
-      removeToken();
-    }
+    removeToken();
   },
 
   async getCurrentUser() {

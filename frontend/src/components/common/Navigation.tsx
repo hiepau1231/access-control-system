@@ -1,6 +1,6 @@
 import React from 'react';
-import { Menu } from 'antd';
-import { Link, useLocation } from 'react-router-dom';
+import { Menu, message } from 'antd';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { useAuth } from '../../hooks';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -19,10 +19,18 @@ export const Navigation = (): JSX.Element => {
   const { isAuthenticated, logout } = useAuth();
   const { isDarkMode } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleLogout = (e: React.MouseEvent) => {
+  const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
-    logout();
+    try {
+      await logout();
+      message.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      message.error('Failed to logout. Please try again.');
+    }
   };
 
   const items: MenuProps['items'] = [

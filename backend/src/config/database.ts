@@ -3,6 +3,7 @@ import path from 'path';
 import { User } from '../models/User';
 import { Role } from '../models/Role';
 import { Permission } from '../models/Permission';
+import bcrypt from 'bcrypt';
 
 export const AppDataSource = new DataSource({
   type: 'sqlite',
@@ -17,22 +18,44 @@ export const setupDatabase = async () => {
     await AppDataSource.initialize();
     console.log('Database initialized');
 
-    // Seed default role if not exists
     const roleRepository = AppDataSource.getRepository(Role);
+    const userRepository = AppDataSource.getRepository(User);
+
+    // Seed default roles if not exist
     let userRole = await roleRepository.findOne({ where: { name: 'user' } });
     if (!userRole) {
       userRole = await roleRepository.save({
         name: 'user',
         description: 'Default user role'
       });
-      console.log('Default role created');
+      console.log('Default user role created');
+    }
+
+    let adminRole = await roleRepository.findOne({ where: { name: 'admin' } });
+    if (!adminRole) {
+      adminRole = await roleRepository.save({
+        name: 'admin',
+        description: 'Administrator role'
+      });
+      console.log('Admin role created');
+    }
+
+    // Seed admin user if not exists
+    const adminUser = await userRepository.findOne({ where: { username: 'admin' } });
+    if (!adminUser) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await userRepository.save({
+        username: 'admin',
+        password: hashedPassword,
+        email: 'admin@example.com',
+        roleId: adminRole.id
+      });
+      console.log('Admin user created');
     }
 
     // Seed test user if not exists
-    const userRepository = AppDataSource.getRepository(User);
     const testUser = await userRepository.findOne({ where: { username: 'test' } });
     if (!testUser) {
-      const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash('test', 10);
       await userRepository.save({
         username: 'test',
@@ -40,7 +63,7 @@ export const setupDatabase = async () => {
         email: 'test@example.com',
         roleId: userRole.id
       });
-      console.log('Test user created with role:', userRole.name);
+      console.log('Test user created');
     }
 
   } catch (error) {

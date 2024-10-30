@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { setupDatabase } from './config/database';
 import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
 
 const app = express();
 
@@ -23,6 +24,7 @@ setupDatabase().catch(console.error);
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // Add health check route
 app.get('/api/health', (req, res) => {
@@ -35,7 +37,7 @@ app.use('*', (req, res) => {
     error: 'Not Found',
     method: req.method,
     url: req.originalUrl,
-    availableRoutes: ['/api/auth/login', '/api/auth/register', '/api/health']
+    availableRoutes: ['/api/auth/login', '/api/auth/register', '/api/users', '/api/health']
   });
 });
 
@@ -45,6 +47,7 @@ app.listen(PORT, () => {
   console.log('Available routes:');
   console.log('- POST /api/auth/login');
   console.log('- POST /api/auth/register');
+  console.log('- GET /api/users');
   console.log('- GET /api/health');
 });
 

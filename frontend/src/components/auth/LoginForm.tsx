@@ -1,17 +1,26 @@
+import React, { useState } from 'react';
 import { BaseAuthForm } from './BaseAuthForm';
 import { useAuth } from '../../hooks/useAuth';
 import { Link } from 'react-router-dom';
 import { LoginCredentials } from '../../services/auth';
+import { message } from 'antd';
 
-export const LoginForm = () => {
+export const LoginForm: React.FC = () => {
   const { login, isLoading } = useAuth();
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (values: LoginCredentials) => {
     try {
+      setError(null);
       await login(values);
+      message.success('Login successful');
     } catch (error) {
       console.error('Login failed:', error);
-      throw error;
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     }
   };
 
@@ -30,16 +39,19 @@ export const LoginForm = () => {
   ];
 
   return (
-    <BaseAuthForm<LoginCredentials>
-      onSubmit={handleSubmit}
-      submitText="Login"
-      fields={fields}
-      loading={isLoading}
-      extra={
-        <div className="text-center">
-          <Link to="/register">Don't have an account? Register</Link>
-        </div>
-      }
-    />
+    <>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <BaseAuthForm<LoginCredentials>
+        onSubmit={handleSubmit}
+        submitText="Login"
+        fields={fields}
+        loading={isLoading}
+        extra={
+          <div className="text-center">
+            <Link to="/register">Don't have an account? Register</Link>
+          </div>
+        }
+      />
+    </>
   );
 };

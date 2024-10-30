@@ -16,6 +16,7 @@ import { debounce } from '../../utils/debounce';
 import { Button } from '../common/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { Permission } from '../../services/api';
+import { ColumnsType } from 'antd/es/table';
 
 const { confirm } = Modal;
 
@@ -138,7 +139,7 @@ const PermissionManagement: React.FC = () => {
     return colors[category] || 'default';
   };
 
-  const columns = [
+  const columns: ColumnsType<Permission> = [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -159,7 +160,7 @@ const PermissionManagement: React.FC = () => {
         text: cat.replace('_', ' ').toUpperCase(),
         value: cat
       })),
-      onFilter: (value: string | number | boolean, record: Permission) => 
+      onFilter: (value, record: Permission) => 
         record.category === value
     },
     {
@@ -170,7 +171,7 @@ const PermissionManagement: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_: string, record: Permission) => (
+      render: (_: any, record: Permission) => (
         <Space size="middle">
           <Button
             variant="primary"
