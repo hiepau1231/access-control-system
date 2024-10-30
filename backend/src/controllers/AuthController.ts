@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../config/database';
 import { User } from '../models/User';
+import { Role } from '../models/Role';
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -53,39 +54,61 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
 
-    // Kiểm tra user đã tồn tại
-    const existingUser = await db.get(
-      'SELECT * FROM users WHERE username = ? OR email = ?',
-      [username, email]
-    );
+    // Validate required fields
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Username, email, and password are required' });
+    }
+
+    const userRepository = AppDataSource.getRepository(User);
+    const roleRepository = AppDataSource.getRepository(Role);
+
+    // Check if user already exists
+    const existingUser = await userRepository.findOne({
+      where: [{ username }, { email }]
+    });
+
     if (existingUser) {
       return res.status(400).json({ message: 'Username or email already exists' });
+    }
+
+    // Get default role (user role)
+    const defaultRole = await roleRepository.findOne({
+      where: { name: 'user' }
+    });
+
+    if (!defaultRole) {
+      return res.status(500).json({ message: 'Default role not found' });
     }
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Lấy default role (user role)
-    const defaultRole = await db.get('SELECT id FROM roles WHERE name = ?', ['user']);
-    if (!defaultRole) {
-      return res.status(500).json({ message: 'Default role not found' });
-    }
+    // Create new user
+    const user = userRepository.create({
+      username,
+      email,
+      password: hashedPassword,
+      roleId: defaultRole.id
+    });
 
-    // Tạo user mới
-    const result = await db.run(
-      'INSERT INTO users (username, email, password, roleId) VALUES (?, ?, ?, ?)',
-      [username, email, hashedPassword, defaultRole.id]
+    await userRepository.save(user);
+
+    // Generate token
+    const token = jwt.sign(
+      { id: user.id, username: user.username },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '1d' }
     );
 
-    // Trả về response
+    // Return same response structure as login
     res.status(201).json({
-      message: 'User registered successfully',
+      token,
       user: {
-        id: result.lastID,
-        username,
-        email,
-        roleId: defaultRole.id
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        roleId: user.roleId
       }
     });
   } catch (error) {

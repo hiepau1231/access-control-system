@@ -1,201 +1,300 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Select, Button, message, Spin, Alert } from 'antd';
-import { getRoles, getRoleHierarchy, addRoleHierarchy, Role, RoleHierarchy } from '../../services/api';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Tree, Card, Select, Button as AntButton, message, Alert, Spin } from 'antd';
+import { 
+  PlusOutlined, 
+  MinusOutlined, 
+  ExclamationCircleOutlined,
+  InfoCircleOutlined
+} from '@ant-design/icons';
+import { 
+  getRoles, 
+  getRoleHierarchy,
+  addRoleHierarchy,
+  removeRoleHierarchy
+} from '../../services/api';
+import { Button } from '../common/Button';
+import { useTheme } from '../../contexts/ThemeContext';
+import type { Role } from '../../services/api';
 
-export const RoleHierarchyManagement: React.FC = () => {
+interface TreeNode {
+  key: string;
+  title: string;
+  children?: TreeNode[];
+}
+
+interface RoleRelation {
+  parentRoleId: string;
+  childRoleId: string;
+}
+
+interface RoleHierarchyManagementProps {
+  onError?: (error: Error) => void;
+}
+
+const { Option } = Select;
+
+const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onError }) => {
+  const { isDarkMode } = useTheme();
   const [roles, setRoles] = useState<Role[]>([]);
-  const [hierarchy, setHierarchy] = useState<RoleHierarchy[]>([]);
-  const [selectedParent, setSelectedParent] = useState<string>();
-  const [selectedChild, setSelectedChild] = useState<string>();
+  const [hierarchyData, setHierarchyData] = useState<RoleRelation[]>([]);
+  const [treeData, setTreeData] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedParentRole, setSelectedParentRole] = useState<string | null>(null);
+  const [selectedChildRole, setSelectedChildRole] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch roles and hierarchy data
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [rolesData, hierarchyData] = await Promise.all([
+        getRoles(),
+        getRoleHierarchy()
+      ]);
+      setRoles(rolesData);
+      setHierarchyData(hierarchyData);
+      buildTreeData(rolesData, hierarchyData);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Failed to fetch role hierarchy data');
+      message.error(err.message);
+      onError?.(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [onError]);
 
   useEffect(() => {
-    fetchRoles();
-    fetchHierarchy();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
-  const fetchRoles = async () => {
+  // Build tree data from roles and hierarchy
+  const buildTreeData = (roles: Role[], hierarchy: RoleRelation[]) => {
     try {
-      setLoading(true);
-      setError(null);
-      const response = await getRoles();
-      setRoles(Array.isArray(response) ? response : []);
+      const roleMap = new Map(roles.map(role => [role.id, role]));
+      const childrenMap = new Map<string, Set<string>>();
+      const hasParent = new Set<string>();
+
+      // Build relationships map
+      hierarchy.forEach(({ parentRoleId, childRoleId }) => {
+        if (!childrenMap.has(parentRoleId)) {
+          childrenMap.set(parentRoleId, new Set());
+        }
+        childrenMap.get(parentRoleId)?.add(childRoleId);
+        hasParent.add(childRoleId);
+      });
+
+      // Recursive function to build tree nodes
+      const buildNode = (roleId: string): TreeNode => {
+        const role = roleMap.get(roleId);
+        if (!role) throw new Error(`Role not found: ${roleId}`);
+
+        const children = childrenMap.get(roleId);
+        return {
+          key: roleId,
+          title: role.name,
+          children: children 
+            ? Array.from(children).map(childId => buildNode(childId))
+            : undefined
+        };
+      };
+
+      // Start with root nodes (roles without parents)
+      const rootNodes = roles
+        .filter(role => !hasParent.has(role.id))
+        .map(role => buildNode(role.id));
+
+      setTreeData(rootNodes);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Không thể tải danh sách vai trò';
-      setError(errorMessage);
-      message.error(errorMessage);
-      setRoles([]);
-    } finally {
-      setLoading(false);
+      const err = error instanceof Error ? error : new Error('Failed to build role hierarchy tree');
+      onError?.(err);
+      setTreeData([]);
     }
   };
 
-  const fetchHierarchy = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getRoleHierarchy();
-      setHierarchy(Array.isArray(data) ? data : []);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Không thể tải phân cấp vai trò';
-      setError(errorMessage);
-      message.error(errorMessage);
-      setHierarchy([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const validateHierarchy = (): { isValid: boolean; parentId: string; childId: string } | null => {
-    if (!selectedParent || !selectedChild) {
-      message.warning('Vui lòng chọn cả vai trò cha và vai trò con');
-      return null;
-    }
-
-    if (selectedParent === selectedChild) {
-      message.error('Vai trò cha và vai trò con không thể giống nhau');
-      return null;
-    }
-
-    const existingHierarchy = hierarchy.find(
-      h => h.parentRoleId === selectedParent && h.childRoleId === selectedChild
-    );
-    if (existingHierarchy) {
-      message.error('Mối quan hệ phân cấp này đã tồn tại');
-      return null;
-    }
-
-    return {
-      isValid: true,
-      parentId: selectedParent,
-      childId: selectedChild
-    };
-  };
-
-  const handleAddHierarchy = async () => {
-    const validationResult = validateHierarchy();
-    if (!validationResult) return;
-
-    const { parentId, childId } = validationResult;
-
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await addRoleHierarchy(parentId, childId);
-      message.success('Thêm phân cấp vai trò thành công');
-      await fetchHierarchy();
+  // Check for circular dependency
+  const wouldCreateCircular = (parentId: string, childId: string): boolean => {
+    const visited = new Set<string>();
+    const checkCircular = (currentId: string): boolean => {
+      if (currentId === childId) return true;
+      if (visited.has(currentId)) return false;
       
-      // Reset selections
-      setSelectedParent(undefined);
-      setSelectedChild(undefined);
+      visited.add(currentId);
+      const children = hierarchyData
+        .filter(h => h.parentRoleId === currentId)
+        .map(h => h.childRoleId);
+      
+      return children.some(checkCircular);
+    };
+
+    return checkCircular(parentId);
+  };
+
+  // Add parent-child relationship
+  const handleAddRelation = async () => {
+    if (!selectedParentRole || !selectedChildRole) {
+      setError('Please select both parent and child roles');
+      return;
+    }
+
+    if (selectedParentRole === selectedChildRole) {
+      setError('A role cannot be its own parent');
+      return;
+    }
+
+    if (wouldCreateCircular(selectedChildRole, selectedParentRole)) {
+      const circularError = new Error('This would create a circular dependency');
+      setError(circularError.message);
+      onError?.(circularError);
+      return;
+    }
+
+    try {
+      await addRoleHierarchy(selectedParentRole, selectedChildRole);
+      message.success('Role hierarchy relationship added successfully');
+      fetchData();
+      setSelectedParentRole(null);
+      setSelectedChildRole(null);
+      setError(null);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Không thể thêm phân cấp vai trò';
-      setError(errorMessage);
-      message.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
+      const err = error instanceof Error ? error : new Error('Failed to add role hierarchy relationship');
+      message.error(err.message);
+      onError?.(err);
     }
   };
 
-  if (loading && !hierarchy.length) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <Spin size="large" />
-          <div className="mt-2">Đang tải...</div>
-        </div>
-      </div>
-    );
-  }
+  // Remove parent-child relationship
+  const handleRemoveRelation = async () => {
+    if (!selectedParentRole || !selectedChildRole) {
+      setError('Please select both parent and child roles');
+      return;
+    }
+
+    try {
+      await removeRoleHierarchy(selectedParentRole, selectedChildRole);
+      message.success('Role hierarchy relationship removed successfully');
+      fetchData();
+      setSelectedParentRole(null);
+      setSelectedChildRole(null);
+      setError(null);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Failed to remove role hierarchy relationship');
+      message.error(err.message);
+      onError?.(err);
+    }
+  };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Quản lý Phân cấp Vai trò</h2>
-      
-      {error && (
+    <div className={`p-4 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'}`}>
+      <div className="mb-6">
         <Alert
-          message="Lỗi"
-          description={error}
-          type="error"
+          message="Role Hierarchy Management"
+          description="Manage parent-child relationships between roles. Child roles inherit permissions from their parent roles."
+          type="info"
           showIcon
-          className="mb-4"
-          closable
-          onClose={() => setError(null)}
+          icon={<InfoCircleOutlined />}
         />
-      )}
-      
-      <div className="mb-6 flex gap-4">
-        <Select
-          placeholder="Chọn vai trò cha"
-          style={{ width: 200 }}
-          onChange={setSelectedParent}
-          value={selectedParent}
-          loading={loading}
-          disabled={isSubmitting}
-        >
-          {roles?.map(role => (
-            <Select.Option key={role.id} value={role.id}>
-              {role.name}
-            </Select.Option>
-          ))}
-        </Select>
-
-        <Select
-          placeholder="Chọn vai trò con"
-          style={{ width: 200 }}
-          onChange={setSelectedChild}
-          value={selectedChild}
-          loading={loading}
-          disabled={isSubmitting}
-        >
-          {roles?.map(role => (
-            <Select.Option key={role.id} value={role.id}>
-              {role.name}
-            </Select.Option>
-          ))}
-        </Select>
-
-        <Button 
-          type="primary" 
-          onClick={handleAddHierarchy}
-          loading={isSubmitting}
-          disabled={loading}
-        >
-          Thêm Phân cấp
-        </Button>
       </div>
 
-      <Table 
-        columns={[
-          {
-            title: 'Vai trò Cha',
-            dataIndex: 'parent_role',
-            key: 'parent_role',
-            render: (roleId) => {
-              const role = roles.find(r => r.id === roleId);
-              return role?.name || roleId;
-            }
-          },
-          {
-            title: 'Vai trò Con',
-            dataIndex: 'child_role',
-            key: 'child_role',
-            render: (roleId) => {
-              const role = roles.find(r => r.id === roleId);
-              return role?.name || roleId;
-            }
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Hierarchy Tree */}
+        <Card title="Role Hierarchy" bordered={false}>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Spin size="large" />
+            </div>
+          ) : (
+            <Tree
+              treeData={treeData}
+              defaultExpandAll
+              showLine={{ showLeafIcon: false }}
+              className={isDarkMode ? 'ant-tree-dark' : ''}
+            />
+          )}
+        </Card>
+
+        {/* Management Controls */}
+        <Card title="Manage Relationships" bordered={false}>
+          {error && (
+            <Alert
+              message={error}
+              type="error"
+              showIcon
+              className="mb-4"
+              icon={<ExclamationCircleOutlined />}
+            />
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <label className="block mb-2">Parent Role</label>
+              <Select
+                placeholder="Select parent role"
+                value={selectedParentRole}
+                onChange={setSelectedParentRole}
+                style={{ width: '100%' }}
+                className="mb-4"
+              >
+                {roles.map(role => (
+                  <Option key={role.id} value={role.id}>{role.name}</Option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <label className="block mb-2">Child Role</label>
+              <Select
+                placeholder="Select child role"
+                value={selectedChildRole}
+                onChange={setSelectedChildRole}
+                style={{ width: '100%' }}
+                className="mb-4"
+              >
+                {roles.map(role => (
+                  <Option key={role.id} value={role.id}>{role.name}</Option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="flex space-x-4">
+              <Button
+                variant="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddRelation}
+                className="flex-1"
+              >
+                Add Relationship
+              </Button>
+              <Button
+                variant="danger"
+                icon={<MinusOutlined />}
+                onClick={handleRemoveRelation}
+                className="flex-1"
+              >
+                Remove Relationship
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Help Text */}
+      <div className="mt-6">
+        <Alert
+          message="How Role Hierarchy Works"
+          description={
+            <ul className="list-disc pl-5 mt-2">
+              <li>Child roles automatically inherit permissions from their parent roles</li>
+              <li>A role can have multiple parent roles and multiple child roles</li>
+              <li>Circular dependencies are not allowed and will be prevented</li>
+              <li>Removing a relationship does not affect the roles themselves</li>
+            </ul>
           }
-        ]}
-        dataSource={hierarchy}
-        rowKey={(record) => `${record.parentRoleId}-${record.childRoleId}`}
-        loading={loading}
-        pagination={{
-          showSizeChanger: true,
-          showTotal: (total) => `Tổng số ${total} phân cấp`
-        }}
-      />
+          type="info"
+          showIcon
+        />
+      </div>
     </div>
   );
 };
+
+export default RoleHierarchyManagement;

@@ -1,47 +1,49 @@
 import React from 'react';
-import { Table, Button } from 'antd';
+import RoleManagement from '../../components/role/RoleManagement';
+import { Card } from 'antd';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const RoleManagementPage: React.FC = () => {
   const { isDarkMode } = useTheme();
 
-  const columns = [
-    {
-      title: 'Role Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: () => (
-        <Button type="primary">Edit</Button>
-      ),
-    },
-  ];
-
-  const data = [
-    {
-      key: '1',
-      name: 'Admin',
-      description: 'Full access to all features',
-    },
-    // Add more mock data as needed
-  ];
-
   return (
-    <div className={`p-6 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`}>
-      <h1 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Role Management</h1>
-      <Table 
-        columns={columns} 
-        dataSource={data} 
-        className={isDarkMode ? 'ant-table-dark' : ''}
-      />
+    <div className="p-4 sm:p-6">
+      <div className="mb-6">
+        <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          Role Management
+        </h1>
+        <p className={`mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          Manage system roles and their associated permissions. Roles define what actions users can perform in the system.
+        </p>
+      </div>
+      
+      <Card 
+        bordered={false}
+        className={`shadow-md ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
+      >
+        <RoleManagement />
+      </Card>
+
+      {/* Help section */}
+      <div className={`mt-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+        <h2 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          About Roles and Permissions
+        </h2>
+        <ul className={`list-disc pl-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          <li className="mb-2">
+            <strong>Roles</strong> are collections of permissions that can be assigned to users.
+          </li>
+          <li className="mb-2">
+            Each role can have multiple permissions, and users can be assigned one or more roles.
+          </li>
+          <li className="mb-2">
+            Use the <strong>Permissions</strong> button to manage what actions each role can perform.
+          </li>
+          <li>
+            Be careful when deleting roles - ensure no users are dependent on the role first.
+          </li>
+        </ul>
+      </div>
     </div>
   );
 };

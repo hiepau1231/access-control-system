@@ -1,43 +1,113 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Result, Button } from 'antd';
+import React, { Component, ErrorInfo } from 'react';
+import { Button, Result } from 'antd';
+import { ReloadOutlined, BugOutlined } from '@ant-design/icons';
 
 interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null
+class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null
+    };
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return {
+      hasError: true,
+      error,
+      errorInfo: null
+    };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Log error to error reporting service
+    console.error('Error caught by error boundary:', error, errorInfo);
+    
+    this.setState({
+      error,
+      errorInfo
+    });
+
+    // Call onError prop if provided
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
+  }
+
+  handleReset = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null
+    });
   };
 
-  public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
+  handleReload = () => {
+    window.location.reload();
+  };
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
-  }
-
-  public render() {
+  render() {
     if (this.state.hasError) {
+      // Check for custom fallback
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
+      // Default error UI
       return (
         <Result
           status="error"
           title="Something went wrong"
-          subTitle={this.state.error?.message}
+          subTitle={
+            <div className="text-left">
+              <p className="mb-4">
+                We apologize for the inconvenience. An unexpected error has occurred.
+              </p>
+              {process.env.NODE_ENV === 'development' && this.state.error && (
+                <div className="mb-4">
+                  <details className="cursor-pointer">
+                    <summary className="text-blue-500 hover:text-blue-700">
+                      Technical Details
+                    </summary>
+                    <pre className="mt-2 p-4 bg-gray-100 rounded overflow-auto max-h-48">
+                      <code>
+                        {this.state.error.toString()}
+                        {'\n\n'}
+                        {this.state.errorInfo?.componentStack}
+                      </code>
+                    </pre>
+                  </details>
+                </div>
+              )}
+            </div>
+          }
           extra={[
-            <Button type="primary" onClick={() => window.location.reload()} key="reload">
+            <Button
+              key="reset"
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={this.handleReset}
+            >
+              Try Again
+            </Button>,
+            <Button
+              key="reload"
+              icon={<BugOutlined />}
+              onClick={this.handleReload}
+            >
               Reload Page
             </Button>
           ]}
@@ -47,4 +117,20 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
-} 
+}
+
+// HOC to wrap components with error boundary
+export const withErrorBoundary = <P extends object>(
+  WrappedComponent: React.ComponentType<P>,
+  errorBoundaryProps?: Omit<Props, 'children'>
+) => {
+  return function WithErrorBoundary(props: P) {
+    return (
+      <ErrorBoundary {...errorBoundaryProps}>
+        <WrappedComponent {...props} />
+      </ErrorBoundary>
+    );
+  };
+};
+
+export default ErrorBoundary;

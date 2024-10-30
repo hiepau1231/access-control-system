@@ -19,6 +19,7 @@ export interface Permission {
   id: string;
   name: string;
   description: string;
+  category: string;  // Added category field
 }
 
 export interface RoleHierarchy {
@@ -99,8 +100,12 @@ export const assignPermissionToRole = (roleId: string, permissionId: string) =>
   roleService.assignPermission(roleId, permissionId);
 
 export const getPermissions = () => permissionService.getAll();
+export const createPermission = (data: Partial<Permission>) => permissionService.create(data);
+export const updatePermission = (id: string, data: Partial<Permission>) => permissionService.update(id, data);
 export const deletePermission = (id: string) => permissionService.delete(id);
 
 export const getRoleHierarchy = () => roleHierarchyService.getAll();
 export const addRoleHierarchy = (parentRoleId: string, childRoleId: string) =>
   roleHierarchyService.add(parentRoleId, childRoleId);
+export const removeRoleHierarchy = (parentRoleId: string, childRoleId: string) =>
+  roleHierarchyService.remove(parentRoleId, childRoleId);
