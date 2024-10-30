@@ -17,15 +17,19 @@
 - [x] Thiết lập mối quan hệ giữa các bảng
 - [x] Thiết kế quản lý vai trò và quyền
 
-## 4. Triển khai Role Hierarchy 🔄
+## 4. Triển khai Role Hierarchy ✅
 - [x] Database schema cho role hierarchy
 - [x] API endpoints cho quản lý hierarchy
 - [x] Frontend component cho role hierarchy
 - [x] Xử lý circular dependency
-- [ ] Error handling nâng cao
-  - [ ] Validation messages
-  - [ ] Error boundaries
-  - [ ] Loading states
+- [x] Error handling nâng cao
+  - [x] Validation messages
+  - [x] Error boundaries
+  - [x] Loading states
+- [x] Permission system
+  - [x] Chuẩn hóa tên permission (format: action:resource)
+  - [x] Automatic permission assignment
+  - [x] Role-based permission checks
 
 ## 5. Triển khai Mã hóa dữ liệu ⏳
 - [ ] Triển khai thuật toán mã hóa
@@ -38,22 +42,17 @@
 - [ ] Viết tài liệu hướng dẫn
 
 ## Nhiệm vụ tiếp theo
-1. Hoàn thiện Role Hierarchy:
-   - Thêm validation cho role hierarchy
-   - Cải thiện UI/UX với tree view visualization
-   - Thêm confirmation dialogs
+1. Triển khai mã hóa dữ liệu:
+   - Chọn thuật toán mã hóa phù hợp
+   - Implement mã hóa/giải mã
+   - Quản lý khóa bí mật
 
-2. Cải thiện Error Handling:
-   - Thêm error boundaries
-   - Cải thiện error messages
-   - Thêm loading states
-
-3. Cải thiện Performance:
+2. Cải thiện Performance:
    - Implement caching cho API calls
    - Lazy loading cho components
    - Optimize database queries
 
-4. Tăng cường bảo mật:
+3. Tăng cường bảo mật:
    - Implement rate limiting
    - Add request validation
    - Set up security headers
