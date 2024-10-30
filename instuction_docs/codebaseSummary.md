@@ -1,5 +1,50 @@
 # Tổng quan về Codebase
 
+## Cấu trúc thư mục
+
+```
+project/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── auth/
+│   │   │   │   ├── LoginForm.tsx
+│   │   │   │   └── RegisterForm.tsx
+│   │   │   ├── role/
+│   │   │   │   ├── RoleManagement.tsx
+│   │   │   │   └── RoleHierarchyManagement.tsx
+│   │   │   ├── permission/
+│   │   │   │   └── PermissionManagement.tsx
+│   │   │   ├── user/
+│   │   │   │   └── UserManagement.tsx
+│   │   │   └── layout/
+│   │   │       └── MainLayout.tsx
+│   │   ├── pages/
+│   │   │   └── register/
+│   │   │       └── RegisterPage.tsx
+│   │   ├── services/
+│   │   │   └── auth.ts
+│   │   └── index.tsx
+│   ├── package.json
+│   └── package-lock.json
+│
+├── backend/
+│   ├── src/
+│   │   ├── controllers/
+│   │   │   └── PermissionController.ts
+│   │   ├── middleware/
+│   │   │   └── checkPermission.ts
+│   │   └── routes/
+│   │       └── authRoutes.ts
+│   ├── package.json
+│   └── package-lock.json
+│
+└── instruction_docs/
+    ├── instruction.md
+    ├── currenttask.md
+    └── codebaseSummary.md
+```
+
 ## Frontend (React + TypeScript)
 
 ### Components
