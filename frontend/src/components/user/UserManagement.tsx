@@ -3,7 +3,7 @@ import { Table, Input, message, Space, Modal, Form } from 'antd';
 import { UserAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { getUsers, createUser, updateUser, deleteUser } from '../../services/api';
 import { debounce } from '../../utils/debounce';
-import Button from '../common/Button';
+import { Button } from '../common/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { User } from '../../services/api';
 
@@ -102,8 +102,20 @@ const UserManagement: React.FC = () => {
       key: 'actions',
       render: (_: string, record: User) => (
         <Space size="middle">
-          <Button icon={<EditOutlined />} onClick={() => showModal(record)}>Edit</Button>
-          <Button icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} danger>Delete</Button>
+          <Button
+            variant="primary"
+            icon={<EditOutlined />}
+            onClick={() => showModal(record)}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="danger"
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id)}
+          >
+            Delete
+          </Button>
         </Space>
       ),
     },

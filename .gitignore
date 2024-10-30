@@ -84,3 +84,5 @@ dist
 
 # Optional stylelint cache
 .stylelintcache
+
+/data/*.sqlite

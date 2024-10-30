@@ -1,199 +1,55 @@
 import sqlite3 from 'sqlite3';
-import { open, Database } from 'sqlite';
-import { v4 as uuidv4 } from 'uuid';
+import { open } from 'sqlite';
 import bcrypt from 'bcrypt';
-import fs from 'fs';
 
-let db: Database | null = null;
+export const initializeDatabase = async () => {
+  const db = await open({
+    filename: './data/database.sqlite',
+    driver: sqlite3.Database
+  });
 
-export async function initDb() {
-  if (!db) {
-    if (!fs.existsSync('./database.sqlite')) {
-      fs.writeFileSync('./database.sqlite', '');
-    }
+  // Create tables if they don't exist
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS roles (
+      id TEXT PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL,
+      description TEXT
+    );
 
-    db = await open({
-      filename: './database.sqlite',
-      driver: sqlite3.Database
-    });
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      roleId TEXT,
+      FOREIGN KEY (roleId) REFERENCES roles(id)
+    );
+  `);
 
-    // Enable foreign keys
-    await db.run('PRAGMA foreign_keys = ON');
-    
-    // Keep connection alive
-    setInterval(async () => {
-      try {
-        await db?.get('SELECT 1');
-      } catch (error) {
-        console.log('Reconnecting to database...');
-        db = await open({
-          filename: './database.sqlite',
-          driver: sqlite3.Database
-        });
-      }
-    }, 5000);
+  // Insert default roles if they don't exist
+  await db.run(`
+    INSERT OR IGNORE INTO roles (id, name, description)
+    VALUES 
+      ('1', 'admin', 'Administrator'),
+      ('2', 'user', 'Regular user')
+  `);
+
+  // Create default admin user if not exists
+  const adminExists = await db.get('SELECT * FROM users WHERE username = ?', ['admin']);
+  if (!adminExists) {
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    await db.run(`
+      INSERT INTO users (id, username, email, password, roleId)
+      VALUES (?, ?, ?, ?, ?)
+    `, ['1', 'admin', 'admin@example.com', hashedPassword, '1']);
+    console.log('Default admin user created');
   }
+
   return db;
-}
+};
 
-export async function getDb() {
-  if (!db) {
-    db = await initDb();
-  }
-  return db;
-}
+export let db: Awaited<ReturnType<typeof initializeDatabase>>;
 
-export async function initializeDatabase() {
-  const database = await getDb();
-  
-  try {
-    // Tạo các bảng...
-    await database.exec(`
-      CREATE TABLE IF NOT EXISTS roles (
-        id TEXT PRIMARY KEY,
-        name TEXT UNIQUE,
-        description TEXT
-      );
-    `);
-
-    // Tạo bảng users
-    await database.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        username TEXT UNIQUE,
-        password TEXT,
-        email TEXT UNIQUE,
-        roleId TEXT,
-        FOREIGN KEY (roleId) REFERENCES roles (id)
-      );
-    `);
-
-    // Tạo bảng permissions
-    await database.exec(`
-      CREATE TABLE IF NOT EXISTS permissions (
-        id TEXT PRIMARY KEY,
-        name TEXT UNIQUE,
-        description TEXT
-      );
-    `);
-
-    // Tạo bảng role_permissions
-    await database.exec(`
-      CREATE TABLE IF NOT EXISTS role_permissions (
-        roleId TEXT,
-        permissionId TEXT,
-        PRIMARY KEY (roleId, permissionId),
-        FOREIGN KEY (roleId) REFERENCES roles (id),
-        FOREIGN KEY (permissionId) REFERENCES permissions (id)
-      );
-    `);
-
-    // Insert default role if it doesn't exist
-    const adminRole = await database.get('SELECT * FROM roles WHERE name = ?', ['admin']);
-    if (!adminRole) {
-      // Tạo admin role với full permissions
-      const adminRoleId = uuidv4();
-      await database.run(
-        'INSERT INTO roles (id, name, description) VALUES (?, ?, ?)',
-        [adminRoleId, 'admin', 'Administrator role with full access']
-      );
-
-      // Tạo user role với basic permissions
-      const userRoleId = uuidv4();
-      await database.run(
-        'INSERT INTO roles (id, name, description) VALUES (?, ?, ?)',
-        [userRoleId, 'user', 'Basic user role with limited access']
-      );
-
-      // Create permissions
-      const permissions = [
-        // Admin permissions
-        { id: uuidv4(), name: 'read:users', description: 'Can read users' },
-        { id: uuidv4(), name: 'create:users', description: 'Can create users' },
-        { id: uuidv4(), name: 'update:users', description: 'Can update users' },
-        { id: uuidv4(), name: 'delete:users', description: 'Can delete users' },
-        { id: uuidv4(), name: 'read:roles', description: 'Can read roles' },
-        { id: uuidv4(), name: 'create:roles', description: 'Can create roles' },
-        { id: uuidv4(), name: 'update:roles', description: 'Can update roles' },
-        { id: uuidv4(), name: 'delete:roles', description: 'Can delete roles' },
-        { id: uuidv4(), name: 'read:permissions', description: 'Can read permissions' },
-        { id: uuidv4(), name: 'create:permissions', description: 'Can create permissions' },
-        { id: uuidv4(), name: 'update:permissions', description: 'Can update permissions' },
-        { id: uuidv4(), name: 'delete:permissions', description: 'Can delete permissions' },
-        
-        // Basic user permissions
-        { id: uuidv4(), name: 'read:own', description: 'Can read own data' },
-        { id: uuidv4(), name: 'update:own', description: 'Can update own data' },
-        { id: uuidv4(), name: 'read:basic', description: 'Can read basic info' }
-      ];
-
-      // Insert permissions and assign to roles
-      for (const perm of permissions) {
-        await database.run(
-          'INSERT INTO permissions (id, name, description) VALUES (?, ?, ?)',
-          [perm.id, perm.name, perm.description]
-        );
-
-        // Assign all permissions to admin role
-        await database.run(
-          'INSERT INTO role_permissions (roleId, permissionId) VALUES (?, ?)',
-          [adminRoleId, perm.id]
-        );
-
-        // Assign only basic permissions to user role
-        if (['read:own', 'update:own', 'read:basic'].includes(perm.name)) {
-          await database.run(
-            'INSERT INTO role_permissions (roleId, permissionId) VALUES (?, ?)',
-            [userRoleId, perm.id]
-          );
-        }
-      }
-
-      // Create admin user
-      const adminPassword = await bcrypt.hash('admin123', 10);
-      await database.run(
-        'INSERT INTO users (id, username, email, password, roleId) VALUES (?, ?, ?, ?, ?)',
-        [uuidv4(), 'admin', 'admin@example.com', adminPassword, adminRoleId]
-      );
-
-      console.log('Roles, permissions and admin user created');
-    }
-
-    console.log('Database initialized successfully');
-
-    await database.exec(`
-      CREATE TABLE IF NOT EXISTS role_hierarchy (
-        parent_role_id TEXT NOT NULL,
-        child_role_id TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (parent_role_id, child_role_id),
-        FOREIGN KEY (parent_role_id) REFERENCES roles(id) ON DELETE CASCADE,
-        FOREIGN KEY (child_role_id) REFERENCES roles(id) ON DELETE CASCADE
-      );
-    `);
-  } catch (error) {
-    console.error('Database initialization error:', error);
-    throw error;
-  }
-}
-
-// Cleanup function for graceful shutdown
-process.on('SIGINT', async () => {
-  try {
-    if (db) {
-      await db.close();
-      console.log('Database connection closed.');
-    }
-  } catch (error) {
-    console.error('Error closing database:', error);
-  } finally {
-    process.exit(0);
-  }
-});
-
-// Export functions
-export default {
-  getDb,
-  initDb,
-  initializeDatabase
+export const setupDatabase = async () => {
+  db = await initializeDatabase();
 };

@@ -4,32 +4,34 @@ import RegisterForm from '../../components/auth/RegisterForm';
 import { Card, message } from 'antd';
 import { useTheme } from '../../contexts/ThemeContext';
 import { register } from '../../services/api';
-import axios from 'axios';
+
+interface RegisterValues {
+  username: string;
+  email: string;
+  password: string;
+}
 
 const RegisterPage: React.FC = () => {
-  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
+  const { isDarkMode } = useTheme();
 
-  const handleRegister = async (username: string, email: string, password: string) => {
+  const handleRegister = async (values: RegisterValues) => {
     try {
+      const { username, email, password } = values;
       await register(username, email, password);
-      message.success('Registration successful! Please login.');
+      message.success('Registration successful!');
       navigate('/login');
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        message.error(error.response?.data?.message || 'Registration failed. Please try again.');
-        console.error('Registration error:', error.response?.data);
-      } else {
-        message.error('Registration failed. Please try again.');
-        console.error('Registration error:', error);
-      }
+      message.error('Registration failed!');
+      console.error('Registration error:', error);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <Card
         title="Register"
+        bordered={false}
         className={`w-full max-w-md ${isDarkMode ? 'bg-gray-800 text-white' : ''}`}
       >
         <RegisterForm onRegister={handleRegister} />

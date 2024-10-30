@@ -3,7 +3,7 @@ import { Form, Input, Button } from 'antd';
 import { Link } from 'react-router-dom';
 
 interface RegisterFormProps {
-  onRegister: (username: string, email: string, password: string) => Promise<void>;
+  onRegister: (values: any) => Promise<void>;
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
@@ -11,7 +11,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
 
   const onFinish = async (values: any) => {
     try {
-      await onRegister(values.username, values.email, values.password);
+      await onRegister(values);
     } catch (error) {
       console.error('Registration error details:', error);
     }

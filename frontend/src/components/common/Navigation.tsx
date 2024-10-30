@@ -4,28 +4,33 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import type { MenuProps } from 'antd';
 
+interface CustomMenuItem {
+  key: string;
+  label: JSX.Element;
+}
+
 export const Navigation: React.FC = () => {
   const location = useLocation();
   const { user, hasPermission } = useAuth();
 
-  const menuItems: MenuProps['items'] = [
+  const menuItems = [
     {
       key: 'dashboard',
       label: <Link to="/dashboard">Dashboard</Link>,
     },
-    hasPermission('read:users') && {
+    hasPermission('read:users') ? {
       key: 'users',
       label: <Link to="/users">User Management</Link>,
-    },
-    hasPermission('read:roles') && {
+    } : null,
+    hasPermission('read:roles') ? {
       key: 'roles',
       label: <Link to="/roles">Role Management</Link>,
-    },
-    hasPermission('read:permissions') && {
+    } : null,
+    hasPermission('read:permissions') ? {
       key: 'permissions',
       label: <Link to="/permissions">Permission Management</Link>,
-    },
-  ].filter(Boolean);
+    } : null,
+  ].filter((item): item is CustomMenuItem => item !== null);
 
   return (
     <Menu

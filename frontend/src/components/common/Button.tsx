@@ -1,27 +1,48 @@
 import React from 'react';
-import { Button as AntButton } from 'antd';
-import type { ButtonProps as AntButtonProps } from 'antd';
+import { Button as AntButton, ButtonProps as AntButtonProps } from 'antd';
 
-interface ButtonProps extends AntButtonProps {
-  variant?: 'primary' | 'secondary' | 'danger';
+type ButtonVariant = 'primary' | 'secondary' | 'danger';
+
+interface ButtonStyleConfig {
+  type: 'primary' | 'default';
+  className: string;
+  danger?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  variant = 'primary',
+type CustomButtonProps = Omit<AntButtonProps, 'type' | 'danger' | 'variant'> & {
+  variant: ButtonVariant;
+};
+
+const variantStyles: Record<ButtonVariant, ButtonStyleConfig> = {
+  primary: {
+    type: 'primary',
+    className: 'bg-blue-500 hover:bg-blue-600'
+  },
+  secondary: {
+    type: 'default',
+    className: 'bg-gray-500 hover:bg-gray-600 text-white'
+  },
+  danger: {
+    type: 'primary',
+    danger: true,
+    className: 'bg-red-500 hover:bg-red-600'
+  }
+} as const;
+
+export const Button: React.FC<CustomButtonProps> = ({
+  variant,
   className = '',
   children,
-  ...props 
+  ...props
 }) => {
-  const variantClasses = {
-    primary: 'bg-blue-500 hover:bg-blue-600 text-white',
-    secondary: 'bg-gray-500 hover:bg-gray-600 text-white',
-    danger: 'bg-red-500 hover:bg-red-600 text-white'
-  };
+  const variantStyle = variantStyles[variant];
 
   return (
     <AntButton
-      className={`${variantClasses[variant]} ${className}`}
       {...props}
+      type={variantStyle.type}
+      danger={variantStyle.danger}
+      className={`${variantStyle.className} ${className}`}
     >
       {children}
     </AntButton>

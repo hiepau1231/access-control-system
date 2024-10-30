@@ -4,7 +4,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import { getPermissions, deletePermission } from '../../services/api';
 import { handleError, showSuccess } from '../../utils/errorHandler';
 import { debounce } from '../../utils/debounce';
-import LoadingIndicator from '../common/LoadingIndicator';
+import { LoadingIndicator } from '../common/LoadingIndicator';
 import type { Permission } from '../../services/api';
 import '../../styles/animations.css';
 

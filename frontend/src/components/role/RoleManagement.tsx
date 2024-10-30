@@ -12,7 +12,7 @@ import {
   assignPermissionToRole
 } from '../../services/api';
 import { debounce } from '../../utils/debounce';
-import Button from '../common/Button';
+import { Button } from '../common/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { Role, Permission } from '../../services/api';
 
@@ -149,9 +149,27 @@ const RoleManagement: React.FC = () => {
       key: 'actions',
       render: (_: string, record: Role) => (
         <Space size="middle">
-          <Button icon={<EditOutlined />} onClick={() => showModal(record)}>Edit</Button>
-          <Button icon={<KeyOutlined />} onClick={() => showPermissionModal(record)}>Permissions</Button>
-          <Button icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} danger>Delete</Button>
+          <Button
+            variant="primary"
+            icon={<EditOutlined />}
+            onClick={() => showModal(record)}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="primary"
+            icon={<KeyOutlined />}
+            onClick={() => showPermissionModal(record)}
+          >
+            Permissions
+          </Button>
+          <Button
+            variant="danger"
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id)}
+          >
+            Delete
+          </Button>
         </Space>
       ),
     },

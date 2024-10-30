@@ -49,3 +49,52 @@ code {
     opacity: 1;
   }
 }
+
+/* Dark mode styles */
+.dark {
+  @apply bg-gray-900 text-white;
+}
+
+.dark .ant-card {
+  @apply bg-gray-800 border-gray-700;
+}
+
+.dark .ant-input {
+  @apply bg-gray-700 border-gray-600 text-white;
+}
+
+.dark .ant-input-password {
+  @apply bg-gray-700 border-gray-600;
+}
+
+.dark .ant-input-password-icon {
+  @apply text-gray-400;
+}
+
+.dark .ant-btn {
+  @apply border-gray-600;
+}
+
+.dark .ant-form-item-label > label {
+  @apply text-gray-300;
+}
+
+.dark .ant-divider {
+  @apply border-gray-700;
+}
+
+.dark .ant-menu {
+  @apply bg-gray-800 border-gray-700;
+}
+
+.dark .ant-menu-item {
+  @apply text-gray-300;
+}
+
+.dark .ant-menu-item:hover {
+  @apply bg-gray-700;
+}
+
+.dark .ant-menu-item-selected {
+  @apply bg-blue-600 text-white;
+}

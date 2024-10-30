@@ -1,46 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Card, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import LoginForm from '../../components/auth/LoginForm';
-import { Card, message } from 'antd';
 import { useTheme } from '../../contexts/ThemeContext';
 import { login } from '../../services/api';
-import axios from 'axios';
 
 const LoginPage: React.FC = () => {
-  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
+  const { isDarkMode } = useTheme();
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (username: string, password: string) => {
     try {
+      setLoading(true);
       const response = await login(username, password);
-      console.log('Login response:', response); // Debug log
       
-      if (response && response.token) {
+      if (response.token) {
         localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
         message.success('Login successful!');
-        navigate('/users');
-      } else {
-        message.error('Invalid response from server');
-        console.error('Invalid response structure:', response);
+        navigate('/dashboard');
       }
     } catch (error) {
-      console.error('Login error:', error); // Debug log
-      if (axios.isAxiosError(error)) {
-        message.error(error.response?.data?.message || 'Login failed. Please check your credentials.');
-      } else {
-        message.error('Login failed. Please try again.');
-      }
+      message.error('Invalid username or password');
+      console.error('Login error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <Card
         title="Login"
+        bordered={false}
         className={`w-full max-w-md ${isDarkMode ? 'bg-gray-800 text-white' : ''}`}
       >
-        <LoginForm onLogin={handleLogin} />
+        <LoginForm onLogin={handleLogin} loading={loading} />
       </Card>
     </div>
   );
