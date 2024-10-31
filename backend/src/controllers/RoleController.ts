@@ -4,6 +4,7 @@ import { Role } from '../models/Role';
 import { Permission } from '../models/Permission';
 import { User } from '../models/User';
 import { RoleHierarchy } from '../models/RoleHierarchy';
+import { RolePermission } from '../models/RolePermission';
 import { v4 as uuidv4 } from 'uuid';
 
 const ADMIN_ROLE_NAME = 'admin';
@@ -141,6 +142,78 @@ export class RoleController {
     }
   }
 
+  async assignPermission(req: Request, res: Response) {
+    try {
+      const roleId = req.params.id;
+      const permissionId = req.params.permissionId;
+
+      // Kiểm tra role và permission tồn tại
+      const roleRepository = AppDataSource.getRepository(Role);
+      const permissionRepository = AppDataSource.getRepository(Permission);
+      const rolePermissionRepository = AppDataSource.getRepository(RolePermission);
+
+      const [role, permission] = await Promise.all([
+        roleRepository.findOneBy({ id: roleId }),
+        permissionRepository.findOneBy({ id: permissionId })
+      ]);
+
+      if (!role) {
+        return res.status(404).json({ error: 'Role not found' });
+      }
+
+      if (!permission) {
+        return res.status(404).json({ error: 'Permission not found' });
+      }
+
+      // Kiểm tra xem permission đã được gán cho role chưa
+      const existingRolePermission = await rolePermissionRepository.findOneBy({
+        roleId,
+        permissionId
+      });
+
+      if (existingRolePermission) {
+        return res.status(400).json({ error: 'Permission already assigned to role' });
+      }
+
+      // Tạo mới role permission
+      const rolePermission = rolePermissionRepository.create({
+        roleId,
+        permissionId
+      });
+
+      await rolePermissionRepository.save(rolePermission);
+      res.status(201).json({ message: 'Permission assigned successfully' });
+    } catch (error) {
+      console.error('Error assigning permission:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  async removePermission(req: Request, res: Response) {
+    try {
+      const roleId = req.params.id;
+      const permissionId = req.params.permissionId;
+      const rolePermissionRepository = AppDataSource.getRepository(RolePermission);
+
+      // Kiểm tra role permission tồn tại
+      const rolePermission = await rolePermissionRepository.findOneBy({
+        roleId,
+        permissionId
+      });
+
+      if (!rolePermission) {
+        return res.status(404).json({ error: 'Permission not assigned to role' });
+      }
+
+      // Xóa role permission
+      await rolePermissionRepository.remove(rolePermission);
+      res.json({ message: 'Permission removed successfully' });
+    } catch (error) {
+      console.error('Error removing permission:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
   async getRoleHierarchy(req: Request, res: Response) {
     try {
       const hierarchyRepository = AppDataSource.getRepository(RoleHierarchy);
@@ -165,8 +238,8 @@ export class RoleController {
 
   async addRoleHierarchy(req: Request, res: Response) {
     try {
-      const { parent_role_id, child_role_id } = req.body;
-      if (!parent_role_id || !child_role_id) {
+      const { parentRoleId, childRoleId } = req.body;
+      if (!parentRoleId || !childRoleId) {
         return res.status(400).json({ error: 'Parent and child role IDs are required' });
       }
 
@@ -175,8 +248,8 @@ export class RoleController {
       
       // Kiểm tra roles tồn tại
       const [parentRole, childRole] = await Promise.all([
-        roleRepository.findOneBy({ id: parent_role_id }),
-        roleRepository.findOneBy({ id: child_role_id })
+        roleRepository.findOneBy({ id: parentRoleId }),
+        roleRepository.findOneBy({ id: childRoleId })
       ]);
       
       if (!parentRole || !childRole) {
@@ -184,15 +257,15 @@ export class RoleController {
       }
 
       // Kiểm tra circular dependency
-      const hasCircular = await this.checkCircularDependency(parent_role_id, child_role_id);
+      const hasCircular = await this.checkCircularDependency(parentRoleId, childRoleId);
       if (hasCircular) {
         return res.status(400).json({ error: 'Circular dependency detected' });
       }
 
       // Thêm quan hệ hierarchy
       const hierarchy = hierarchyRepository.create({
-        parent_role_id,
-        child_role_id
+        parent_role_id: parentRoleId,
+        child_role_id: childRoleId
       });
       await hierarchyRepository.save(hierarchy);
 

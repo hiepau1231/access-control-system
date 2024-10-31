@@ -61,6 +61,7 @@ export const roleService = {
   update: (id: string, data: Partial<Role>) => authApi.put<Role>(`/api/roles/${id}`, data).then(extractData),
   delete: (id: string) => authApi.delete(`/api/roles/${id}`).then(extractData),
   getPermissions: (roleId: string) => authApi.get<Permission[]>(`/api/roles/${roleId}/permissions`).then(extractData),
+  getFullPermissions: (roleId: string) => authApi.get<Permission[]>(`/api/roles/${roleId}/permissions/full`).then(extractData),
   assignPermission: (roleId: string, permissionId: string) => 
     authApi.post(`/api/roles/${roleId}/permissions/${permissionId}`).then(extractData),
   removePermission: (roleId: string, permissionId: string) =>
@@ -96,6 +97,7 @@ export const createRole = (data: Partial<Role>) => roleService.create(data);
 export const updateRole = (id: string, data: Partial<Role>) => roleService.update(id, data);
 export const deleteRole = (id: string) => roleService.delete(id);
 export const getRolePermissions = (roleId: string) => roleService.getPermissions(roleId);
+export const getRoleFullPermissions = (roleId: string) => roleService.getFullPermissions(roleId);
 export const assignPermissionToRole = (roleId: string, permissionId: string) => 
   roleService.assignPermission(roleId, permissionId);
 

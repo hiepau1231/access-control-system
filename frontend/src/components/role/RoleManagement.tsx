@@ -13,7 +13,8 @@ import {
   deleteRole, 
   getPermissions,
   assignPermissionToRole,
-  getRolePermissions
+  getRolePermissions,
+  getRoleFullPermissions
 } from '../../services/api';
 import { debounce } from '../../utils/debounce';
 import { Button } from '../common/Button';
@@ -48,10 +49,12 @@ const RoleManagement: React.FC = () => {
 
   const fetchPermissions = useCallback(async () => {
     try {
+      // Thử lấy full permissions trước
       const fetchedPermissions = await getPermissions();
       setPermissions(fetchedPermissions);
     } catch (error) {
-      message.error('Failed to fetch permissions');
+      // Nếu không có quyền read:permissions, sẽ không hiển thị lỗi
+      console.log('Could not fetch full permissions list');
     }
   }, []);
 
@@ -62,6 +65,7 @@ const RoleManagement: React.FC = () => {
 
   const fetchRolePermissions = async (roleId: string) => {
     try {
+      // Thử lấy permissions của role với quyền read:roles
       const permissions = await getRolePermissions(roleId);
       setSelectedRolePermissions(permissions.map(p => p.id));
     } catch (error) {

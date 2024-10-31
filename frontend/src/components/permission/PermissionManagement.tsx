@@ -31,6 +31,29 @@ const PERMISSION_CATEGORIES = [
   'audit_logs'
 ];
 
+// Predefined permission actions
+const PERMISSION_ACTIONS = [
+  'create',
+  'read',
+  'update',
+  'delete',
+  'manage',
+  'view',
+  'approve',
+  'reject'
+];
+
+// Predefined permission resources
+const PERMISSION_RESOURCES = [
+  'users',
+  'roles',
+  'permissions',
+  'content',
+  'settings',
+  'reports',
+  'logs'
+];
+
 const PermissionManagement: React.FC = () => {
   const { isDarkMode } = useTheme();
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -38,6 +61,8 @@ const PermissionManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string>('');
+  const [selectedResource, setSelectedResource] = useState<string>('');
   const [form] = Form.useForm();
 
   const fetchPermissions = useCallback(async () => {
@@ -77,12 +102,39 @@ const PermissionManagement: React.FC = () => {
   const showModal = (permission?: Permission) => {
     if (permission) {
       setSelectedPermission(permission);
-      form.setFieldsValue(permission);
+      const [action, resource] = permission.name.split(':');
+      setSelectedAction(action);
+      setSelectedResource(resource);
+      form.setFieldsValue({
+        ...permission,
+        action,
+        resource
+      });
     } else {
       setSelectedPermission(null);
+      setSelectedAction('');
+      setSelectedResource('');
       form.resetFields();
     }
     setIsModalOpen(true);
+  };
+
+  const handleActionChange = (value: string) => {
+    setSelectedAction(value);
+    updatePermissionName(value, selectedResource);
+  };
+
+  const handleResourceChange = (value: string) => {
+    setSelectedResource(value);
+    updatePermissionName(selectedAction, value);
+  };
+
+  const updatePermissionName = (action: string, resource: string) => {
+    if (action && resource) {
+      form.setFieldsValue({
+        name: `${action}:${resource}`
+      });
+    }
   };
 
   const handleOk = async () => {
@@ -236,22 +288,59 @@ const PermissionManagement: React.FC = () => {
       >
         <Form form={form} layout="vertical">
           <Form.Item 
-            name="name" 
-            label="Permission Name"
-            rules={[
-              { required: true, message: 'Please input permission name!' },
-              { min: 3, message: 'Permission name must be at least 3 characters' },
-              { 
-                pattern: /^[a-z_]+$/, 
-                message: 'Permission name can only contain lowercase letters and underscores' 
-              }
-            ]}
+            name="action" 
+            label="Action"
+            rules={[{ required: true, message: 'Please select an action!' }]}
             tooltip={{
-              title: 'Use lowercase letters and underscores only, e.g., "manage_users"',
+              title: 'Select the action this permission grants',
               icon: <InfoCircleOutlined />
             }}
           >
-            <Input />
+            <Select
+              placeholder="Select action"
+              onChange={handleActionChange}
+              value={selectedAction}
+            >
+              {PERMISSION_ACTIONS.map(action => (
+                <Select.Option key={action} value={action}>
+                  {action.toUpperCase()}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item 
+            name="resource" 
+            label="Resource"
+            rules={[{ required: true, message: 'Please select a resource!' }]}
+            tooltip={{
+              title: 'Select the resource this permission applies to',
+              icon: <InfoCircleOutlined />
+            }}
+          >
+            <Select
+              placeholder="Select resource"
+              onChange={handleResourceChange}
+              value={selectedResource}
+            >
+              {PERMISSION_RESOURCES.map(resource => (
+                <Select.Option key={resource} value={resource}>
+                  {resource.toUpperCase()}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item 
+            name="name" 
+            label="Permission Name"
+            rules={[{ required: true, message: 'Permission name is required!' }]}
+            tooltip={{
+              title: 'This will be automatically generated from action and resource',
+              icon: <InfoCircleOutlined />
+            }}
+          >
+            <Input disabled />
           </Form.Item>
 
           <Form.Item

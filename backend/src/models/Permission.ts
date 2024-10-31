@@ -1,5 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, OneToMany } from 'typeorm';
 import { AppDataSource } from '../config/database';
+import { Role } from './Role';
+import { RolePermission } from './RolePermission';
 
 @Entity('permissions')
 export class Permission {
@@ -26,6 +28,12 @@ export class Permission {
     ]
   })
   category: string;
+
+  @OneToMany(() => RolePermission, rolePermission => rolePermission.permission)
+  rolePermissions: RolePermission[];
+
+  @ManyToMany(() => Role, role => role.permissions)
+  roles: Role[];
 }
 
 export class PermissionModel {
@@ -60,14 +68,21 @@ export class PermissionModel {
   }
 
   static async assignToRole(roleId: string, permissionId: string): Promise<void> {
-    const repository = AppDataSource.getRepository('role_permissions');
-    await repository.save({ roleId, permissionId });
+    const rolePermissionRepo = AppDataSource.getRepository(RolePermission);
+    const rolePermission = rolePermissionRepo.create({
+      roleId,
+      permissionId
+    });
+    await rolePermissionRepo.save(rolePermission);
   }
 
-  static async getRolePermissions(roleId: string): Promise<string[]> {
-    const repository = AppDataSource.getRepository('role_permissions');
-    const permissions = await repository.find({ where: { roleId } });
-    return permissions.map(p => p.permissionId);
+  static async getRolePermissions(roleId: string): Promise<Permission[]> {
+    const repository = AppDataSource.getRepository(Permission);
+    return repository
+      .createQueryBuilder('permission')
+      .innerJoin('role_permissions', 'rp', 'permission.id = rp.permissionId')
+      .where('rp.roleId = :roleId', { roleId })
+      .getMany();
   }
 
   // Thêm phương thức để cập nhật category cho permissions hiện có

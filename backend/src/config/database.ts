@@ -4,12 +4,14 @@ import { User } from '../models/User';
 import { Role } from '../models/Role';
 import { Permission } from '../models/Permission';
 import { RoleHierarchy } from '../models/RoleHierarchy';
+import { RolePermission } from '../models/RolePermission';
 import bcrypt from 'bcrypt';
 
 export const AppDataSource = new DataSource({
   type: 'sqlite',
   database: path.join(__dirname, '../../data/database.sqlite'),
-  entities: [User, Role, Permission, RoleHierarchy],
+  entities: [User, Role, Permission, RoleHierarchy, RolePermission],
+  migrations: [path.join(__dirname, '../migrations/*.ts')],
   synchronize: true,
   logging: true
 });
@@ -22,6 +24,7 @@ export const setupDatabase = async () => {
     const roleRepository = AppDataSource.getRepository(Role);
     const userRepository = AppDataSource.getRepository(User);
     const permissionRepository = AppDataSource.getRepository(Permission);
+    const rolePermissionRepository = AppDataSource.getRepository(RolePermission);
 
     // Seed default roles if not exist
     let userRole = await roleRepository.findOne({ where: { name: 'user' } });
@@ -55,10 +58,28 @@ export const setupDatabase = async () => {
     ];
 
     for (const perm of defaultPermissions) {
-      const existingPerm = await permissionRepository.findOne({ where: { name: perm.name } });
-      if (!existingPerm) {
-        await permissionRepository.save(perm);
+      let permission = await permissionRepository.findOne({ where: { name: perm.name } });
+      if (!permission) {
+        permission = await permissionRepository.save(perm);
         console.log(`Permission ${perm.name} created`);
+      }
+
+      // Assign all permissions to admin role
+      if (adminRole) {
+        const rolePermExists = await rolePermissionRepository.findOne({
+          where: {
+            roleId: adminRole.id,
+            permissionId: permission.id
+          }
+        });
+
+        if (!rolePermExists) {
+          await rolePermissionRepository.save({
+            roleId: adminRole.id,
+            permissionId: permission.id
+          });
+          console.log(`Permission ${perm.name} assigned to admin role`);
+        }
       }
     }
 
