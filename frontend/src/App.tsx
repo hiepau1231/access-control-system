@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { App as AntApp, message } from 'antd';
-import { AuthProvider } from './hooks/useAuth';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './contexts/ThemeContext';
 import MainLayout from './components/layout/MainLayout';
 import LoginPage from './pages/login/LoginPage';
@@ -15,8 +15,12 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { PublicRoute } from './components/auth/PublicRoute';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { errorReporting, handleError } from './utils/errorReporting';
+import { LoadingProvider } from './contexts/LoadingContext';
+import { LoadingIndicator } from './components/common/LoadingIndicator';
 
 const AppRoutes = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
     <Routes>
       {/* Public routes */}
@@ -72,15 +76,23 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
 
-      {/* Redirect root to dashboard or login based on auth status */}
+      {/* Root route */}
       <Route path="/" element={
-        <ProtectedRoute>
+        isAuthenticated ? (
           <Navigate to="/dashboard" replace />
-        </ProtectedRoute>
+        ) : (
+          <Navigate to="/login" replace />
+        )
       } />
 
-      {/* Catch all route */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Catch all route - Keep current route if authenticated */}
+      <Route path="*" element={
+        isAuthenticated ? (
+          <Navigate to="." replace />
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
     </Routes>
   );
 };
@@ -101,9 +113,12 @@ const AppContent: React.FC = () => {
       >
         <AntApp>
           <ThemeProvider>
-            <AuthProvider>
-              <AppRoutes />
-            </AuthProvider>
+            <LoadingProvider>
+              <AuthProvider>
+                <LoadingIndicator fullScreen />
+                <AppRoutes />
+              </AuthProvider>
+            </LoadingProvider>
           </ThemeProvider>
         </AntApp>
       </ErrorBoundary>
@@ -117,7 +132,6 @@ const App: React.FC = () => {
     <ErrorBoundary
       onError={(error) => {
         console.error('Critical error in app root:', error);
-        // You might want to show a critical error page here
         return (
           <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="text-center p-8">

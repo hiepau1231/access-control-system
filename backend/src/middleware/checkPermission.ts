@@ -1,59 +1,60 @@
 import { Request, Response, NextFunction } from 'express';
-import { getDb } from '../config/database';
+import { AppDataSource } from '../config/database';
+import { User } from '../models/User';
+import { Role } from '../models/Role';
+import { Permission } from '../models/Permission';
 
 const ADMIN_ROLE_NAME = 'admin';
 
 export const checkPermission = (requiredPermission: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const db = await getDb();
-      
       const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      // Get user's role
-      const user = await db.get(`
-        SELECT u.roleId, r.name as roleName 
-        FROM users u
-        JOIN roles r ON u.roleId = r.id
-        WHERE u.id = ?
-      `, [userId]);
+      // Get user with role
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.role', 'role')
+        .where('user.id = :userId', { userId })
+        .getOne();
 
       if (!user) {
         return res.status(401).json({ message: 'User not found' });
       }
 
       // Nếu user có admin role, cho phép tất cả các quyền
-      if (user.roleName === ADMIN_ROLE_NAME) {
+      if (user.role.name === ADMIN_ROLE_NAME) {
         return next();
       }
 
       // Get all parent roles (including user's direct role)
-      const roles = await db.all(`
-        WITH RECURSIVE role_tree AS (
-          -- Base case: start with user's role
-          SELECT id, name FROM roles WHERE id = ?
-          UNION ALL
-          -- Recursive case: get parent roles
-          SELECT r.id, r.name
-          FROM roles r
-          JOIN role_hierarchy rh ON r.id = rh.parent_role_id
-          JOIN role_tree rt ON rt.id = rh.child_role_id
-        )
-        SELECT DISTINCT id FROM role_tree
-      `, [user.roleId]);
+      const roleRepository = AppDataSource.getRepository(Role);
+      const roles = await roleRepository
+        .createQueryBuilder('role')
+        .where(qb => {
+          const subQuery = qb
+            .subQuery()
+            .select('r.id')
+            .from(Role, 'r')
+            .leftJoin('role_hierarchy', 'rh', 'r.id = rh.child_role_id')
+            .where('r.id = :roleId', { roleId: user.roleId })
+            .getQuery();
+          return 'role.id IN ' + subQuery;
+        })
+        .getMany();
 
       // Check if any of the roles has the required permission
-      const hasPermission = await db.get(`
-        SELECT 1
-        FROM role_permissions rp
-        JOIN permissions p ON rp.permissionId = p.id
-        WHERE rp.roleId IN (${roles.map(() => '?').join(',')})
-        AND p.name = ?
-        LIMIT 1
-      `, [...roles.map(r => r.id), requiredPermission]);
+      const permissionRepository = AppDataSource.getRepository(Permission);
+      const hasPermission = await permissionRepository
+        .createQueryBuilder('permission')
+        .innerJoin('role_permissions', 'rp', 'permission.id = rp.permissionId')
+        .where('rp.roleId IN (:...roleIds)', { roleIds: roles.map(r => r.id) })
+        .andWhere('permission.name = :permissionName', { permissionName: requiredPermission })
+        .getOne();
 
       if (!hasPermission) {
         return res.status(403).json({ 
@@ -74,53 +75,53 @@ export const checkPermission = (requiredPermission: string) => {
 export const checkMultiplePermissions = (requiredPermissions: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const db = await getDb();
-      
       const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ message: 'Unauthorized - User not authenticated' });
       }
 
-      // Get user's role
-      const user = await db.get(`
-        SELECT u.roleId, r.name as roleName 
-        FROM users u
-        JOIN roles r ON u.roleId = r.id
-        WHERE u.id = ?
-      `, [userId]);
+      // Get user with role
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.role', 'role')
+        .where('user.id = :userId', { userId })
+        .getOne();
 
       if (!user) {
         return res.status(401).json({ message: 'User not found' });
       }
 
       // Nếu user có admin role, cho phép tất cả các quyền
-      if (user.roleName === ADMIN_ROLE_NAME) {
+      if (user.role.name === ADMIN_ROLE_NAME) {
         return next();
       }
 
       // Get all parent roles (including user's direct role)
-      const roles = await db.all(`
-        WITH RECURSIVE role_tree AS (
-          SELECT id, name FROM roles WHERE id = ?
-          UNION ALL
-          SELECT r.id, r.name
-          FROM roles r
-          JOIN role_hierarchy rh ON r.id = rh.parent_role_id
-          JOIN role_tree rt ON rt.id = rh.child_role_id
-        )
-        SELECT DISTINCT id FROM role_tree
-      `, [user.roleId]);
+      const roleRepository = AppDataSource.getRepository(Role);
+      const roles = await roleRepository
+        .createQueryBuilder('role')
+        .where(qb => {
+          const subQuery = qb
+            .subQuery()
+            .select('r.id')
+            .from(Role, 'r')
+            .leftJoin('role_hierarchy', 'rh', 'r.id = rh.child_role_id')
+            .where('r.id = :roleId', { roleId: user.roleId })
+            .getQuery();
+          return 'role.id IN ' + subQuery;
+        })
+        .getMany();
 
       // Check permissions
+      const permissionRepository = AppDataSource.getRepository(Permission);
       for (const permission of requiredPermissions) {
-        const hasPermission = await db.get(`
-          SELECT 1
-          FROM role_permissions rp
-          JOIN permissions p ON rp.permissionId = p.id
-          WHERE rp.roleId IN (${roles.map(() => '?').join(',')})
-          AND p.name = ?
-          LIMIT 1
-        `, [...roles.map(r => r.id), permission]);
+        const hasPermission = await permissionRepository
+          .createQueryBuilder('permission')
+          .innerJoin('role_permissions', 'rp', 'permission.id = rp.permissionId')
+          .where('rp.roleId IN (:...roleIds)', { roleIds: roles.map(r => r.id) })
+          .andWhere('permission.name = :permissionName', { permissionName: permission })
+          .getOne();
 
         if (!hasPermission) {
           return res.status(403).json({

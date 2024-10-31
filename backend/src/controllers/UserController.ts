@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { UserModel } from '../models/User';
-import { getDb } from '../config/database';
+import { User, UserModel } from '../models/User';
+import { AppDataSource } from '../config/database';
+import { Role } from '../models/Role';
 
-const ADMIN_ROLE_ID = '1'; // Giả sử ID 1 là admin role
+const ADMIN_ROLE_NAME = 'admin';
 
 export class UserController {
   async getAllUsers(req: Request, res: Response) {
@@ -31,6 +32,50 @@ export class UserController {
     }
   }
 
+  async createUser(req: Request, res: Response) {
+    try {
+      const { username, email, password, roleId } = req.body;
+
+      // Validate required fields
+      if (!username || !email || !password || !roleId) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      // Check if username or email already exists
+      const userRepository = AppDataSource.getRepository(User);
+      const existingUser = await userRepository.findOne({
+        where: [{ username }, { email }]
+      });
+
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: 'Username or email already exists' 
+        });
+      }
+
+      // Check if role exists
+      const roleRepository = AppDataSource.getRepository(Role);
+      const role = await roleRepository.findOneBy({ id: roleId });
+      if (!role) {
+        return res.status(400).json({ message: 'Invalid role' });
+      }
+
+      const user = await UserModel.create({
+        username,
+        email,
+        password,
+        roleId
+      });
+
+      // Remove password from response
+      const { password: _, ...userResponse } = user;
+      res.status(201).json(userResponse);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
   async updateUser(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -41,10 +86,23 @@ export class UserController {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      await UserModel.update(id, updates);
-      const updatedUser = await UserModel.findById(id);
-      
-      res.json(updatedUser);
+      // If updating role, check if role exists
+      if (updates.roleId) {
+        const roleRepository = AppDataSource.getRepository(Role);
+        const role = await roleRepository.findOneBy({ id: updates.roleId });
+        if (!role) {
+          return res.status(400).json({ message: 'Invalid role' });
+        }
+      }
+
+      const updatedUser = await UserModel.update(id, updates);
+      if (updatedUser) {
+        // Remove password from response
+        const { password: _, ...userResponse } = updatedUser;
+        res.json(userResponse);
+      } else {
+        res.status(500).json({ message: 'Failed to update user' });
+      }
     } catch (error) {
       console.error('Error updating user:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -53,38 +111,33 @@ export class UserController {
 
   async deleteUser(req: Request, res: Response) {
     try {
-      const db = await getDb();
       const { id: targetUserId } = req.params;
       const currentUserId = req.user?.id;
+
+      if (!currentUserId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
       
-      // Kiểm tra user tồn tại
+      // Check if user exists
       const targetUser = await UserModel.findById(targetUserId);
       if (!targetUser) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Không cho phép xóa chính mình
+      // Cannot delete your own account
       if (targetUserId === currentUserId) {
         return res.status(403).json({ message: 'Cannot delete your own account' });
       }
 
-      // Lấy thông tin role của cả 2 user
-      const [currentUserRole, targetUserRole] = await Promise.all([
-        db.get('SELECT roleId FROM users WHERE id = ?', [currentUserId]),
-        db.get('SELECT roleId FROM users WHERE id = ?', [targetUserId])
-      ]);
-
-      // Nếu user bị xóa là admin, chỉ admin mới được xóa
-      if (targetUserRole.roleId === ADMIN_ROLE_ID && currentUserRole.roleId !== ADMIN_ROLE_ID) {
-        return res.status(403).json({ message: 'Cannot delete admin user' });
+      // Get current user with role
+      const currentUser = await UserModel.findById(currentUserId);
+      if (!currentUser || !currentUser.role) {
+        return res.status(403).json({ message: 'Permission denied' });
       }
 
-      // Kiểm tra role hierarchy
-      const canDelete = await this.checkRoleHierarchy(currentUserRole.roleId, targetUserRole.roleId);
-      if (!canDelete) {
-        return res.status(403).json({ 
-          message: 'Permission denied - Cannot delete user with higher or equal role' 
-        });
+      // Only admin can delete admin users
+      if (targetUser.role?.name === ADMIN_ROLE_NAME && currentUser.role.name !== ADMIN_ROLE_NAME) {
+        return res.status(403).json({ message: 'Cannot delete admin user' });
       }
 
       await UserModel.delete(targetUserId);
@@ -92,38 +145,6 @@ export class UserController {
     } catch (error) {
       console.error('Error deleting user:', error);
       res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-  private async checkRoleHierarchy(currentRoleId: string, targetRoleId: string): Promise<boolean> {
-    try {
-      const db = await getDb();
-
-      // Admin có thể xóa mọi user
-      if (currentRoleId === ADMIN_ROLE_ID) {
-        return true;
-      }
-
-      // Lấy tất cả các role con của current role
-      const childRoles = await db.all(`
-        WITH RECURSIVE role_tree AS (
-          -- Base case: start with current role
-          SELECT id FROM roles WHERE id = ?
-          UNION ALL
-          -- Recursive case: get child roles
-          SELECT r.id
-          FROM roles r
-          JOIN role_hierarchy rh ON r.id = rh.child_role_id
-          JOIN role_tree rt ON rt.id = rh.parent_role_id
-        )
-        SELECT id FROM role_tree
-      `, [currentRoleId]);
-
-      // Kiểm tra xem target role có phải là role con không
-      return childRoles.some(role => role.id === targetRoleId);
-    } catch (error) {
-      console.error('Error checking role hierarchy:', error);
-      return false;
     }
   }
 }

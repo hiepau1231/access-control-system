@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
-import { RoleModel } from '../models/Role';
-import { getDb } from '../config/database';
+import { AppDataSource } from '../config/database';
+import { Role } from '../models/Role';
+import { Permission } from '../models/Permission';
+import { User } from '../models/User';
+import { RoleHierarchy } from '../models/RoleHierarchy';
 import { v4 as uuidv4 } from 'uuid';
 
 const ADMIN_ROLE_NAME = 'admin';
@@ -8,8 +11,8 @@ const ADMIN_ROLE_NAME = 'admin';
 export class RoleController {
   async getAllRoles(req: Request, res: Response) {
     try {
-      const db = await getDb();
-      const roles = await db.all('SELECT * FROM roles');
+      const roleRepository = AppDataSource.getRepository(Role);
+      const roles = await roleRepository.find();
       res.json(roles);
     } catch (error) {
       console.error('Error getting roles:', error);
@@ -20,8 +23,8 @@ export class RoleController {
   async getRoleById(req: Request, res: Response) {
     try {
       const roleId = req.params.id;
-      const db = await getDb();
-      const role = await db.get('SELECT * FROM roles WHERE id = ?', [roleId]);
+      const roleRepository = AppDataSource.getRepository(Role);
+      const role = await roleRepository.findOneBy({ id: roleId });
       
       if (!role) {
         return res.status(404).json({ error: 'Role not found' });
@@ -41,21 +44,21 @@ export class RoleController {
         return res.status(400).json({ error: 'Role name is required' });
       }
 
-      const db = await getDb();
+      const roleRepository = AppDataSource.getRepository(Role);
       
       // Kiểm tra role name đã tồn tại chưa
-      const existingRole = await db.get('SELECT * FROM roles WHERE name = ?', [name]);
+      const existingRole = await roleRepository.findOneBy({ name });
       if (existingRole) {
         return res.status(400).json({ error: 'Role name already exists' });
       }
 
-      const roleId = uuidv4();
-      await db.run(
-        'INSERT INTO roles (id, name, description) VALUES (?, ?, ?)',
-        [roleId, name, description || '']
-      );
+      const newRole = roleRepository.create({
+        id: uuidv4(),
+        name,
+        description: description || ''
+      });
 
-      const newRole = await db.get('SELECT * FROM roles WHERE id = ?', [roleId]);
+      await roleRepository.save(newRole);
       res.status(201).json(newRole);
     } catch (error) {
       console.error('Error creating role:', error);
@@ -66,10 +69,12 @@ export class RoleController {
   async deleteRole(req: Request, res: Response) {
     try {
       const roleId = req.params.id;
-      const db = await getDb();
+      const roleRepository = AppDataSource.getRepository(Role);
+      const userRepository = AppDataSource.getRepository(User);
+      const hierarchyRepository = AppDataSource.getRepository(RoleHierarchy);
 
       // Kiểm tra role có tồn tại không
-      const role = await db.get('SELECT * FROM roles WHERE id = ?', [roleId]);
+      const role = await roleRepository.findOneBy({ id: roleId });
       if (!role) {
         return res.status(404).json({ error: 'Role not found' });
       }
@@ -80,19 +85,30 @@ export class RoleController {
       }
 
       // Kiểm tra xem có user nào đang sử dụng role này không
-      const usersWithRole = await db.get('SELECT COUNT(*) as count FROM users WHERE roleId = ?', [roleId]);
-      if (usersWithRole.count > 0) {
+      const usersWithRole = await userRepository.count({ where: { roleId } });
+      if (usersWithRole > 0) {
         return res.status(400).json({ error: 'Cannot delete role that is assigned to users' });
       }
 
-      // Xóa các permission liên quan đến role này
-      await db.run('DELETE FROM role_permissions WHERE roleId = ?', [roleId]);
-      
-      // Xóa role hierarchy liên quan
-      await db.run('DELETE FROM role_hierarchy WHERE parent_role_id = ? OR child_role_id = ?', [roleId, roleId]);
-      
-      // Xóa role
-      await db.run('DELETE FROM roles WHERE id = ?', [roleId]);
+      // Xóa role và các quan hệ liên quan
+      await AppDataSource.transaction(async transactionalEntityManager => {
+        // Xóa role permissions
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from('role_permissions')
+          .where('roleId = :roleId', { roleId })
+          .execute();
+
+        // Xóa role hierarchy
+        await hierarchyRepository.delete([
+          { parent_role_id: roleId },
+          { child_role_id: roleId }
+        ]);
+
+        // Xóa role
+        await roleRepository.delete(roleId);
+      });
 
       res.json({ message: 'Role deleted successfully' });
     } catch (error) {
@@ -104,19 +120,19 @@ export class RoleController {
   async getRolePermissions(req: Request, res: Response) {
     try {
       const roleId = req.params.id;
-      const db = await getDb();
+      const roleRepository = AppDataSource.getRepository(Role);
+      const permissionRepository = AppDataSource.getRepository(Permission);
       
-      const role = await db.get('SELECT * FROM roles WHERE id = ?', [roleId]);
+      const role = await roleRepository.findOneBy({ id: roleId });
       if (!role) {
         return res.status(404).json({ error: 'Role not found' });
       }
 
-      const permissions = await db.all(`
-        SELECT p.* 
-        FROM permissions p
-        JOIN role_permissions rp ON p.id = rp.permissionId
-        WHERE rp.roleId = ?
-      `, [roleId]);
+      const permissions = await permissionRepository
+        .createQueryBuilder('permission')
+        .innerJoin('role_permissions', 'rp', 'permission.id = rp.permissionId')
+        .where('rp.roleId = :roleId', { roleId })
+        .getMany();
 
       res.json(permissions);
     } catch (error) {
@@ -127,17 +143,18 @@ export class RoleController {
 
   async getRoleHierarchy(req: Request, res: Response) {
     try {
-      const db = await getDb();
-      const hierarchy = await db.all(`
-        SELECT 
-          r1.id as parent_role_id,
-          r1.name as parent_role_name,
-          r2.id as child_role_id,
-          r2.name as child_role_name
-        FROM role_hierarchy rh
-        JOIN roles r1 ON rh.parent_role_id = r1.id
-        JOIN roles r2 ON rh.child_role_id = r2.id
-      `);
+      const hierarchyRepository = AppDataSource.getRepository(RoleHierarchy);
+      const hierarchy = await hierarchyRepository
+        .createQueryBuilder('rh')
+        .select([
+          'rh.parent_role_id as parentRoleId',
+          'parentRole.name as parentRoleName',
+          'rh.child_role_id as childRoleId',
+          'childRole.name as childRoleName'
+        ])
+        .leftJoin('rh.parentRole', 'parentRole')
+        .leftJoin('rh.childRole', 'childRole')
+        .getRawMany();
       
       res.json(hierarchy);
     } catch (error) {
@@ -153,27 +170,31 @@ export class RoleController {
         return res.status(400).json({ error: 'Parent and child role IDs are required' });
       }
 
-      const db = await getDb();
+      const roleRepository = AppDataSource.getRepository(Role);
+      const hierarchyRepository = AppDataSource.getRepository(RoleHierarchy);
       
       // Kiểm tra roles tồn tại
-      const parentRole = await db.get('SELECT * FROM roles WHERE id = ?', [parent_role_id]);
-      const childRole = await db.get('SELECT * FROM roles WHERE id = ?', [child_role_id]);
+      const [parentRole, childRole] = await Promise.all([
+        roleRepository.findOneBy({ id: parent_role_id }),
+        roleRepository.findOneBy({ id: child_role_id })
+      ]);
       
       if (!parentRole || !childRole) {
         return res.status(404).json({ error: 'One or both roles not found' });
       }
 
       // Kiểm tra circular dependency
-      const hasCircular = await this.checkCircularDependency(db, parent_role_id, child_role_id);
+      const hasCircular = await this.checkCircularDependency(parent_role_id, child_role_id);
       if (hasCircular) {
         return res.status(400).json({ error: 'Circular dependency detected' });
       }
 
       // Thêm quan hệ hierarchy
-      await db.run(
-        'INSERT INTO role_hierarchy (parent_role_id, child_role_id) VALUES (?, ?)',
-        [parent_role_id, child_role_id]
-      );
+      const hierarchy = hierarchyRepository.create({
+        parent_role_id,
+        child_role_id
+      });
+      await hierarchyRepository.save(hierarchy);
 
       res.status(201).json({ message: 'Role hierarchy added successfully' });
     } catch (error) {
@@ -182,23 +203,14 @@ export class RoleController {
     }
   }
 
-  private async checkCircularDependency(db: any, parentId: string, childId: string): Promise<boolean> {
-    // Kiểm tra nếu child role đã là parent của parent role
-    const result = await db.get(`
-      WITH RECURSIVE hierarchy_path AS (
-        SELECT child_role_id, parent_role_id, 1 as level
-        FROM role_hierarchy
-        WHERE child_role_id = ?
-        UNION ALL
-        SELECT rh.child_role_id, rh.parent_role_id, hp.level + 1
-        FROM role_hierarchy rh
-        JOIN hierarchy_path hp ON rh.child_role_id = hp.parent_role_id
-      )
-      SELECT COUNT(*) as count
-      FROM hierarchy_path
-      WHERE parent_role_id = ?
-    `, [parentId, childId]);
+  private async checkCircularDependency(parentId: string, childId: string): Promise<boolean> {
+    const hierarchyRepository = AppDataSource.getRepository(RoleHierarchy);
+    const result = await hierarchyRepository
+      .createQueryBuilder('rh')
+      .where('rh.child_role_id = :parentId', { parentId })
+      .andWhere('rh.parent_role_id = :childId', { childId })
+      .getCount();
 
-    return result.count > 0;
+    return result > 0;
   }
 }

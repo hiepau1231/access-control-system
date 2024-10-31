@@ -3,12 +3,13 @@ import path from 'path';
 import { User } from '../models/User';
 import { Role } from '../models/Role';
 import { Permission } from '../models/Permission';
+import { RoleHierarchy } from '../models/RoleHierarchy';
 import bcrypt from 'bcrypt';
 
 export const AppDataSource = new DataSource({
   type: 'sqlite',
   database: path.join(__dirname, '../../data/database.sqlite'),
-  entities: [User, Role, Permission],
+  entities: [User, Role, Permission, RoleHierarchy],
   synchronize: true,
   logging: true
 });
@@ -20,6 +21,7 @@ export const setupDatabase = async () => {
 
     const roleRepository = AppDataSource.getRepository(Role);
     const userRepository = AppDataSource.getRepository(User);
+    const permissionRepository = AppDataSource.getRepository(Permission);
 
     // Seed default roles if not exist
     let userRole = await roleRepository.findOne({ where: { name: 'user' } });
@@ -38,6 +40,26 @@ export const setupDatabase = async () => {
         description: 'Administrator role'
       });
       console.log('Admin role created');
+    }
+
+    // Seed default permissions if not exist
+    const defaultPermissions = [
+      { name: 'read:roles', description: 'Can read roles' },
+      { name: 'create:roles', description: 'Can create roles' },
+      { name: 'update:roles', description: 'Can update roles' },
+      { name: 'delete:roles', description: 'Can delete roles' },
+      { name: 'read:permissions', description: 'Can read permissions' },
+      { name: 'create:permissions', description: 'Can create permissions' },
+      { name: 'update:permissions', description: 'Can update permissions' },
+      { name: 'delete:permissions', description: 'Can delete permissions' }
+    ];
+
+    for (const perm of defaultPermissions) {
+      const existingPerm = await permissionRepository.findOne({ where: { name: perm.name } });
+      if (!existingPerm) {
+        await permissionRepository.save(perm);
+        console.log(`Permission ${perm.name} created`);
+      }
     }
 
     // Seed admin user if not exists

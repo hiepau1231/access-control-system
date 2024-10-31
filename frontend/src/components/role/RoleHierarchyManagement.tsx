@@ -15,6 +15,8 @@ import {
 import { Button } from '../common/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { Role } from '../../services/api';
+import { Skeleton } from '../common/Skeleton';
+import { useLoading } from '../../contexts/LoadingContext';
 
 interface TreeNode {
   key: string;
@@ -42,8 +44,8 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
   const [selectedParentRole, setSelectedParentRole] = useState<string | null>(null);
   const [selectedChildRole, setSelectedChildRole] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { isLoading } = useLoading();
 
-  // Fetch roles and hierarchy data
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -67,14 +69,12 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
     fetchData();
   }, [fetchData]);
 
-  // Build tree data from roles and hierarchy
   const buildTreeData = (roles: Role[], hierarchy: RoleRelation[]) => {
     try {
       const roleMap = new Map(roles.map(role => [role.id, role]));
       const childrenMap = new Map<string, Set<string>>();
       const hasParent = new Set<string>();
 
-      // Build relationships map
       hierarchy.forEach(({ parentRoleId, childRoleId }) => {
         if (!childrenMap.has(parentRoleId)) {
           childrenMap.set(parentRoleId, new Set());
@@ -83,7 +83,6 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
         hasParent.add(childRoleId);
       });
 
-      // Recursive function to build tree nodes
       const buildNode = (roleId: string): TreeNode => {
         const role = roleMap.get(roleId);
         if (!role) throw new Error(`Role not found: ${roleId}`);
@@ -98,7 +97,6 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
         };
       };
 
-      // Start with root nodes (roles without parents)
       const rootNodes = roles
         .filter(role => !hasParent.has(role.id))
         .map(role => buildNode(role.id));
@@ -111,7 +109,6 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
     }
   };
 
-  // Check for circular dependency
   const wouldCreateCircular = (parentId: string, childId: string): boolean => {
     const visited = new Set<string>();
     const checkCircular = (currentId: string): boolean => {
@@ -129,7 +126,6 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
     return checkCircular(parentId);
   };
 
-  // Add parent-child relationship
   const handleAddRelation = async () => {
     if (!selectedParentRole || !selectedChildRole) {
       setError('Please select both parent and child roles');
@@ -162,7 +158,6 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
     }
   };
 
-  // Remove parent-child relationship
   const handleRemoveRelation = async () => {
     if (!selectedParentRole || !selectedChildRole) {
       setError('Please select both parent and child roles');
@@ -183,6 +178,10 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
     }
   };
 
+  if (isLoading) {
+    return <Skeleton type="table" rows={6} />;
+  }
+
   return (
     <div className={`p-4 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'}`}>
       <div className="mb-6">
@@ -196,7 +195,6 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Hierarchy Tree */}
         <Card title="Role Hierarchy" bordered={false}>
           {loading ? (
             <div className="flex justify-center items-center h-64">
@@ -212,7 +210,6 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
           )}
         </Card>
 
-        {/* Management Controls */}
         <Card title="Manage Relationships" bordered={false}>
           {error && (
             <Alert
@@ -277,7 +274,6 @@ const RoleHierarchyManagement: React.FC<RoleHierarchyManagementProps> = ({ onErr
         </Card>
       </div>
 
-      {/* Help Text */}
       <div className="mt-6">
         <Alert
           message="How Role Hierarchy Works"

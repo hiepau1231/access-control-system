@@ -4,6 +4,8 @@ import cors from 'cors';
 import { setupDatabase } from './config/database';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
+import roleRoutes from './routes/roleRoutes';
+import permissionRoutes from './routes/permissionRoutes';
 
 const app = express();
 
@@ -25,19 +27,28 @@ setupDatabase().catch(console.error);
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/permissions', permissionRoutes);
 
 // Add health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Add catch-all route for debugging
+// Update available routes in catch-all
 app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Not Found',
     method: req.method,
     url: req.originalUrl,
-    availableRoutes: ['/api/auth/login', '/api/auth/register', '/api/users', '/api/health']
+    availableRoutes: [
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/users',
+      '/api/roles',
+      '/api/permissions',
+      '/api/health'
+    ]
   });
 });
 
@@ -48,6 +59,8 @@ app.listen(PORT, () => {
   console.log('- POST /api/auth/login');
   console.log('- POST /api/auth/register');
   console.log('- GET /api/users');
+  console.log('- GET /api/roles');
+  console.log('- GET /api/permissions');
   console.log('- GET /api/health');
 });
 

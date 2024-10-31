@@ -1,12 +1,20 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { LoadingIndicator } from '../common/LoadingIndicator';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading, initialized } = useAuth();
+  const location = useLocation();
   
+  // Show loading while auth is initializing
+  if (!initialized || isLoading) {
+    return <LoadingIndicator fullScreen />;
+  }
+
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    // Save the attempted URL
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

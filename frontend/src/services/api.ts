@@ -46,43 +46,43 @@ const extractData = <T>(response: AxiosResponse<T>): T => response.data;
 
 // User API
 export const userService = {
-  getAll: () => authApi.get<User[]>('/users').then(extractData),
-  getById: (id: string) => authApi.get<User>(`/users/${id}`).then(extractData),
-  create: (data: Partial<User>) => authApi.post<User>('/users', data).then(extractData),
-  update: (id: string, data: Partial<User>) => authApi.put<User>(`/users/${id}`, data).then(extractData),
-  delete: (id: string) => authApi.delete(`/users/${id}`).then(extractData)
+  getAll: () => authApi.get<User[]>('/api/users').then(extractData),
+  getById: (id: string) => authApi.get<User>(`/api/users/${id}`).then(extractData),
+  create: (data: Partial<User>) => authApi.post<User>('/api/users', data).then(extractData),
+  update: (id: string, data: Partial<User>) => authApi.put<User>(`/api/users/${id}`, data).then(extractData),
+  delete: (id: string) => authApi.delete(`/api/users/${id}`).then(extractData)
 };
 
 // Role API
 export const roleService = {
-  getAll: () => authApi.get<Role[]>('/roles').then(extractData),
-  getById: (id: string) => authApi.get<Role>(`/roles/${id}`).then(extractData),
-  create: (data: Partial<Role>) => authApi.post<Role>('/roles', data).then(extractData),
-  update: (id: string, data: Partial<Role>) => authApi.put<Role>(`/roles/${id}`, data).then(extractData),
-  delete: (id: string) => authApi.delete(`/roles/${id}`).then(extractData),
-  getPermissions: (roleId: string) => authApi.get<Permission[]>(`/roles/${roleId}/permissions`).then(extractData),
+  getAll: () => authApi.get<Role[]>('/api/roles').then(extractData),
+  getById: (id: string) => authApi.get<Role>(`/api/roles/${id}`).then(extractData),
+  create: (data: Partial<Role>) => authApi.post<Role>('/api/roles', data).then(extractData),
+  update: (id: string, data: Partial<Role>) => authApi.put<Role>(`/api/roles/${id}`, data).then(extractData),
+  delete: (id: string) => authApi.delete(`/api/roles/${id}`).then(extractData),
+  getPermissions: (roleId: string) => authApi.get<Permission[]>(`/api/roles/${roleId}/permissions`).then(extractData),
   assignPermission: (roleId: string, permissionId: string) => 
-    authApi.post(`/roles/${roleId}/permissions/${permissionId}`).then(extractData),
+    authApi.post(`/api/roles/${roleId}/permissions/${permissionId}`).then(extractData),
   removePermission: (roleId: string, permissionId: string) =>
-    authApi.delete(`/roles/${roleId}/permissions/${permissionId}`).then(extractData)
+    authApi.delete(`/api/roles/${roleId}/permissions/${permissionId}`).then(extractData)
 };
 
 // Permission API
 export const permissionService = {
-  getAll: () => authApi.get<Permission[]>('/permissions').then(extractData),
-  getById: (id: string) => authApi.get<Permission>(`/permissions/${id}`).then(extractData),
-  create: (data: Partial<Permission>) => authApi.post<Permission>('/permissions', data).then(extractData),
-  update: (id: string, data: Partial<Permission>) => authApi.put<Permission>(`/permissions/${id}`, data).then(extractData),
-  delete: (id: string) => authApi.delete(`/permissions/${id}`).then(extractData)
+  getAll: () => authApi.get<Permission[]>('/api/permissions').then(extractData),
+  getById: (id: string) => authApi.get<Permission>(`/api/permissions/${id}`).then(extractData),
+  create: (data: Partial<Permission>) => authApi.post<Permission>('/api/permissions', data).then(extractData),
+  update: (id: string, data: Partial<Permission>) => authApi.put<Permission>(`/api/permissions/${id}`, data).then(extractData),
+  delete: (id: string) => authApi.delete(`/api/permissions/${id}`).then(extractData)
 };
 
 // Role Hierarchy API
 export const roleHierarchyService = {
-  getAll: () => authApi.get<RoleHierarchy[]>('/role-hierarchy').then(extractData),
+  getAll: () => authApi.get<RoleHierarchy[]>('/api/roles/hierarchy').then(extractData),
   add: (parentRoleId: string, childRoleId: string) => 
-    authApi.post('/role-hierarchy', { parentRoleId, childRoleId }).then(extractData),
+    authApi.post('/api/roles/hierarchy', { parentRoleId, childRoleId }).then(extractData),
   remove: (parentRoleId: string, childRoleId: string) =>
-    authApi.delete(`/role-hierarchy/${parentRoleId}/${childRoleId}`).then(extractData)
+    authApi.delete(`/api/roles/hierarchy/${parentRoleId}/${childRoleId}`).then(extractData)
 };
 
 // Export convenience functions
