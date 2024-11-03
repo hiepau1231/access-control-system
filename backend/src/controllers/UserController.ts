@@ -2,17 +2,35 @@ import { Request, Response } from 'express';
 import { User, UserModel } from '../models/User';
 import { AppDataSource } from '../config/database';
 import { Role } from '../models/Role';
+import { getRepository } from 'typeorm';
 
 const ADMIN_ROLE_NAME = 'admin';
 
 export class UserController {
   async getAllUsers(req: Request, res: Response) {
     try {
-      const users = await UserModel.getAll();
-      res.json(users);
+      console.log('Getting all users...');
+      const userRepository = AppDataSource.getRepository(User);
+      
+      const users = await userRepository.find({
+        relations: ['role'],
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          roleId: true,
+          encryptedPassword: true,
+        }
+      });
+      
+      console.log('Users found:', users.length);
+      return res.json(users);
     } catch (error) {
-      console.error('Error getting users:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('Error in getAllUsers:', error);
+      return res.status(500).json({ 
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   }
 
@@ -34,42 +52,25 @@ export class UserController {
 
   async createUser(req: Request, res: Response) {
     try {
+      const userRepository = getRepository(User);
       const { username, email, password, roleId } = req.body;
 
-      // Validate required fields
-      if (!username || !email || !password || !roleId) {
-        return res.status(400).json({ message: 'Missing required fields' });
-      }
+      const user = new User();
+      user.username = username;
+      user.email = email;
+      user.password = password;
+      user.encryptedPassword = User.encryptPassword(password);
+      user.roleId = roleId;
 
-      // Check if username or email already exists
-      const userRepository = AppDataSource.getRepository(User);
-      const existingUser = await userRepository.findOne({
-        where: [{ username }, { email }]
+      await userRepository.save(user);
+      
+      return res.status(201).json({
+        message: 'User created successfully',
+        user: {
+          ...user,
+          password: undefined
+        }
       });
-
-      if (existingUser) {
-        return res.status(400).json({ 
-          message: 'Username or email already exists' 
-        });
-      }
-
-      // Check if role exists
-      const roleRepository = AppDataSource.getRepository(Role);
-      const role = await roleRepository.findOneBy({ id: roleId });
-      if (!role) {
-        return res.status(400).json({ message: 'Invalid role' });
-      }
-
-      const user = await UserModel.create({
-        username,
-        email,
-        password,
-        roleId
-      });
-
-      // Remove password from response
-      const { password: _, ...userResponse } = user;
-      res.status(201).json(userResponse);
     } catch (error) {
       console.error('Error creating user:', error);
       res.status(500).json({ message: 'Internal server error' });

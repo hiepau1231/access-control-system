@@ -1,31 +1,38 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { AppDataSource } from '../config/database';
+import { User } from '../models/User';
 
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    username: string;
-    roleId: string;
-  };
-}
-
-export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Unauthorized - No token provided' });
+    // Get token from header
+    const token = req.headers.authorization?.split(' ')[1];
+    console.log('Received token:', token ? 'exists' : 'missing');
+
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
     }
 
-    const token = authHeader.split(' ')[1];
-    
-    // TODO: Move JWT_SECRET to environment variables
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
-    req.user = decoded as { id: string; username: string; roleId: string };
-    
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
+    console.log('Decoded token:', decoded);
+
+    // Get user from database
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({
+      where: { id: decoded.id },
+      relations: ['role']
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    // Add user to request object
+    (req as any).user = user;
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Unauthorized - Invalid token' });
+    console.error('Auth middleware error:', error);
+    return res.status(401).json({ message: 'Invalid token' });
   }
 };

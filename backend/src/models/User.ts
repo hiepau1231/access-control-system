@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Role } from './Role';
 import { AppDataSource } from '../config/database';
-import bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Entity('users')
 export class User {
@@ -23,6 +23,21 @@ export class User {
   @ManyToOne(() => Role)
   @JoinColumn({ name: 'roleId' })
   role: Role;
+
+  @Column({ nullable: true })
+  encryptedPassword: string;
+
+  static encryptPassword(password: string): string {
+    const algorithm = 'aes-256-cbc';
+    const key = Buffer.from('your-secret-key-32-chars-required!', 'utf-8');
+    const iv = crypto.randomBytes(16);
+    
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let encrypted = cipher.update(password, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    
+    return iv.toString('hex') + ':' + encrypted;
+  }
 }
 
 export class UserModel {
@@ -54,7 +69,7 @@ export class UserModel {
     
     // Hash password if provided
     if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
+      data.password = User.encryptPassword(data.password);
     }
     
     const user = repository.create(data);
@@ -66,7 +81,7 @@ export class UserModel {
     
     // Hash password if provided
     if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
+      data.password = User.encryptPassword(data.password);
     }
     
     await repository.update(id, data);
@@ -79,6 +94,12 @@ export class UserModel {
   }
 
   static async validatePassword(user: User, password: string): Promise<boolean> {
-    return bcrypt.compare(password, user.password);
+    const [iv, encryptedPassword] = user.password.split(':');
+    const algorithm = 'aes-256-cbc';
+    const key = Buffer.from('your-secret-key-32-chars-required!', 'utf-8');
+    const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(iv, 'hex'));
+    let decrypted = decipher.update(encryptedPassword, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted === password;
   }
 }

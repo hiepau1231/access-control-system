@@ -1,5 +1,41 @@
+import axios from 'axios';
 import { authApi, authService, AuthResponse, LoginCredentials, RegisterData } from './auth';
 import { AxiosResponse } from 'axios';
+
+// Tạo instance axios
+const api = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      config: error.config
+    });
+    throw error;
+  }
+);
 
 // Types
 export interface User {
@@ -87,7 +123,16 @@ export const roleHierarchyService = {
 };
 
 // Export convenience functions
-export const getUsers = () => userService.getAll();
+export const getUsers = async () => {
+  try {
+    const response = await authApi.get<User[]>('/api/users');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
 export const createUser = (data: Partial<User>) => userService.create(data);
 export const updateUser = (id: string, data: Partial<User>) => userService.update(id, data);
 export const deleteUser = (id: string) => userService.delete(id);

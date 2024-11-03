@@ -5,7 +5,7 @@ import { authService, LoginCredentials, RegisterData } from '../services/auth';
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -16,11 +16,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const login = async (username: string, password: string) => {
+  const login = async (credentials: LoginCredentials) => {
     try {
       setIsLoading(true);
-      const response = await authService.login({ username, password });
-      setUser(response.user);
+      const response = await authService.login(credentials);
+      const { token, user } = response;
+      
+      console.log('Login successful:', { token: !!token, user });
+      
+      localStorage.setItem('token', token);
+      setUser(user);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }

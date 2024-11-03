@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Table, Input, message, Space, Modal, Form, Select } from 'antd';
-import { UserAddOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UserAddOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { getUsers, createUser, updateUser, deleteUser, getRoles } from '../../services/api';
 import { debounce } from '../../utils/debounce';
 import { Button } from '../common/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { User, Role } from '../../services/api';
+import { PasswordViewModal } from './PasswordViewModal';
 
 const { confirm } = Modal;
 
@@ -18,6 +19,8 @@ const UserManagement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [selectedPassword, setSelectedPassword] = useState<string>('');
+  const [modalVisible, setModalVisible] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -142,6 +145,21 @@ const UserManagement: React.FC = () => {
       },
     },
     {
+      title: 'Password',
+      dataIndex: 'encryptedPassword',
+      key: 'password',
+      render: (encryptedPassword: string) => (
+        <Button
+          variant="primary"
+          icon={<EyeOutlined />}
+          onClick={() => {
+            setSelectedPassword(encryptedPassword);
+            setModalVisible(true);
+          }}
+        />
+      ),
+    },
+    {
       title: 'Actions',
       key: 'actions',
       render: (_: string, record: User) => (
@@ -260,6 +278,11 @@ const UserManagement: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+      <PasswordViewModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        encryptedPassword={selectedPassword}
+      />
     </div>
   );
 };
