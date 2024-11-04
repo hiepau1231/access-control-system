@@ -242,6 +242,10 @@ const UserManagement: React.FC = () => {
         onCancel={() => setIsModalOpen(false)}
         width="95%"
         style={{ maxWidth: '500px' }}
+        closeIcon={
+          <span className="text-gray-400 hover:text-gray-600 text-xl">×</span>
+        }
+        className="custom-modal"
       >
         <Form form={form} layout="vertical">
           <Form.Item 
