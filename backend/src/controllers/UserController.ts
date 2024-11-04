@@ -16,9 +16,13 @@ export class UserController {
 
   private encryptPassword(password: string, secretKey: string): string {
     try {
+      // Tạo cipher với secret key
       const cipher = crypto.createCipher('aes-256-cbc', secretKey);
-      let encrypted = cipher.update(password, 'utf8', 'hex');
-      encrypted += cipher.final('hex');
+      
+      // Mã hóa password
+      let encrypted = cipher.update(password, 'utf8', 'base64');
+      encrypted += cipher.final('base64');
+      
       return encrypted;
     } catch (error) {
       console.error('Encryption error:', error);
@@ -28,9 +32,13 @@ export class UserController {
 
   private decryptPassword(encryptedPassword: string, secretKey: string): string {
     try {
+      // Tạo decipher với secret key
       const decipher = crypto.createDecipher('aes-256-cbc', secretKey);
-      let decrypted = decipher.update(encryptedPassword, 'hex', 'utf8');
+      
+      // Giải mã từ base64
+      let decrypted = decipher.update(encryptedPassword, 'base64', 'utf8');
       decrypted += decipher.final('utf8');
+      
       return decrypted;
     } catch (error) {
       throw new Error('Invalid decryption key');

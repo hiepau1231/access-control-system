@@ -150,14 +150,22 @@ const UserManagement: React.FC = () => {
       dataIndex: 'encryptedPassword',
       key: 'password',
       render: (encryptedPassword: string) => (
-        <Button
-          variant="primary"
-          icon={<EyeOutlined />}
-          onClick={() => {
-            setSelectedPassword(encryptedPassword);
-            setModalVisible(true);
-          }}
-        />
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
+            <span className="text-gray-600 font-medium">Dữ liệu mã hóa:</span>
+            <span className="font-mono text-sm bg-gray-100 p-1 px-2 rounded">
+              {encryptedPassword}
+            </span>
+          </div>
+          <Button
+            variant="primary"
+            icon={<EyeOutlined />}
+            onClick={() => {
+              setSelectedPassword(encryptedPassword);
+              setModalVisible(true);
+            }}
+          />
+        </div>
       ),
     },
     {
