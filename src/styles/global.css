@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #1890ff;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --error-color: #ff4d4f;
+  --border-radius: 6px;
+}
+
+@layer components {
+  .modal-content {
+    @apply p-6 space-y-4;
+  }
+
+  .input-group {
+    @apply space-y-2;
+  }
+
+  .password-display {
+    @apply font-mono bg-gray-50 p-3 rounded-md border border-gray-200 relative;
+  }
+
+  .action-button {
+    @apply transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+
+  .alert-container {
+    @apply rounded-lg shadow-sm border-l-4;
+  }
+
+  .loading-overlay {
+    @apply absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center;
+  }
+
+  .page-header {
+    @apply mb-6 flex justify-between items-center;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold text-gray-800;
+  }
+
+  .filter-group {
+    @apply space-y-4 md:space-y-0 md:flex md:space-x-4;
+  }
+
+  .table-container {
+    @apply bg-white rounded-lg shadow-sm overflow-hidden;
+  }
+
+  .action-button-group {
+    @apply space-x-2 flex items-center;
+  }
+
+  /* Data Display */
+  .data-table {
+    @apply w-full;
+  }
+
+  .data-table th {
+    @apply bg-gray-50 text-gray-700 font-semibold;
+  }
+
+  .data-table td {
+    @apply text-gray-600;
+  }
+
+  /* Status Indicators */
+  .status-badge {
+    @apply px-3 py-1 rounded-full text-xs font-semibold;
+  }
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Animation Utilities */
+.hover-scale {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+.hover-fade {
+  @apply transition-opacity duration-200 hover:opacity-80;
+}

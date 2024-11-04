@@ -6,7 +6,7 @@ import { debounce } from '../../utils/debounce';
 import { Button } from '../common/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { User, Role } from '../../services/api';
-import { PasswordViewModal } from './PasswordViewModal';
+import PasswordViewModal from './PasswordViewModal';
 
 const { confirm } = Modal;
 
@@ -85,14 +85,15 @@ const UserManagement: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (editingUserId) {
-        // Don't send password if it's empty in edit mode
-        const { password, ...updateData } = values;
+        // Don't send password and secretKey if it's empty in edit mode
+        const { password, secretKey, ...updateData } = values;
         if (password) {
           updateData.password = password;
         }
         await updateUser(editingUserId, updateData);
         message.success('User updated successfully');
       } else {
+        // Include secretKey when creating new user
         await createUser(values);
         message.success('User created successfully');
       }
@@ -263,6 +264,19 @@ const UserManagement: React.FC = () => {
           >
             <Input.Password />
           </Form.Item>
+          {!editingUserId && (
+            <Form.Item
+              name="secretKey"
+              label="Encryption Key"
+              tooltip="This key will be required to view the password later"
+              rules={[
+                { required: true, message: 'Please input encryption key!' },
+                { min: 6, message: 'Encryption key must be at least 6 characters' }
+              ]}
+            >
+              <Input.Password />
+            </Form.Item>
+          )}
           <Form.Item 
             name="roleId" 
             label="Role"

@@ -1,17 +1,45 @@
 import { Request, Response } from 'express';
-import { User, UserModel } from '../models/User';
-import { AppDataSource } from '../config/database';
+import { User } from '../models/User';
 import { Role } from '../models/Role';
-import { getRepository } from 'typeorm';
-
-const ADMIN_ROLE_NAME = 'admin';
+import { AppDataSource } from '../config/database';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 export class UserController {
+  constructor() {
+    // Bind các phương thức với instance
+    this.createUser = this.createUser.bind(this);
+    this.verifyPassword = this.verifyPassword.bind(this);
+    this.encryptPassword = this.encryptPassword.bind(this);
+    this.decryptPassword = this.decryptPassword.bind(this);
+  }
+
+  private encryptPassword(password: string, secretKey: string): string {
+    try {
+      const cipher = crypto.createCipher('aes-256-cbc', secretKey);
+      let encrypted = cipher.update(password, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+      return encrypted;
+    } catch (error) {
+      console.error('Encryption error:', error);
+      throw new Error('Encryption failed');
+    }
+  }
+
+  private decryptPassword(encryptedPassword: string, secretKey: string): string {
+    try {
+      const decipher = crypto.createDecipher('aes-256-cbc', secretKey);
+      let decrypted = decipher.update(encryptedPassword, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    } catch (error) {
+      throw new Error('Invalid decryption key');
+    }
+  }
+
   async getAllUsers(req: Request, res: Response) {
     try {
-      console.log('Getting all users...');
       const userRepository = AppDataSource.getRepository(User);
-      
       const users = await userRepository.find({
         relations: ['role'],
         select: {
@@ -20,132 +48,164 @@ export class UserController {
           email: true,
           roleId: true,
           encryptedPassword: true,
+          role: {
+            id: true,
+            name: true
+          }
         }
       });
       
-      console.log('Users found:', users.length);
-      return res.json(users);
+      res.json(users);
     } catch (error) {
-      console.error('Error in getAllUsers:', error);
-      return res.status(500).json({ 
-        message: 'Internal server error',
-        error: error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error getting users:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to get users' 
       });
-    }
-  }
-
-  async getUserById(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const user = await UserModel.findById(id);
-      
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-      res.json(user);
-    } catch (error) {
-      console.error('Error getting user:', error);
-      res.status(500).json({ message: 'Internal server error' });
     }
   }
 
   async createUser(req: Request, res: Response) {
     try {
-      const userRepository = getRepository(User);
-      const { username, email, password, roleId } = req.body;
-
-      const user = new User();
-      user.username = username;
-      user.email = email;
-      user.password = password;
-      user.encryptedPassword = User.encryptPassword(password);
-      user.roleId = roleId;
-
-      await userRepository.save(user);
+      console.log('Creating user with data:', req.body);
+      const userRepository = AppDataSource.getRepository(User);
+      const roleRepository = AppDataSource.getRepository(Role);
       
-      return res.status(201).json({
-        message: 'User created successfully',
-        user: {
-          ...user,
-          password: undefined
-        }
-      });
+      const { username, password, email, roleId, secretKey } = req.body;
+      
+      if (!username || !password || !email || !roleId || !secretKey) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required fields'
+        });
+      }
+
+      // Kiểm tra role có tồn tại
+      const role = await roleRepository.findOneBy({ id: roleId });
+      if (!role) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Invalid role' 
+        });
+      }
+
+      try {
+        // Mã hóa mật khẩu
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const encryptedPassword = this.encryptPassword(password, secretKey);
+
+        // Tạo user mới
+        const newUser = userRepository.create({
+          username,
+          email,
+          password: hashedPassword,
+          encryptedPassword,
+          roleId
+        });
+
+        // Lưu user
+        const savedUser = await userRepository.save(newUser);
+
+        // Loại bỏ password khỏi response
+        const { password: _, ...userResponse } = savedUser;
+
+        res.status(201).json({
+          success: true,
+          data: userResponse
+        });
+      } catch (error) {
+        console.error('Error in password encryption:', error);
+        throw error;
+      }
     } catch (error) {
-      console.error('Error creating user:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('Create user error:', error);
+      res.status(400).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to create user'
+      });
     }
   }
 
   async updateUser(req: Request, res: Response) {
     try {
+      const userRepository = AppDataSource.getRepository(User);
       const { id } = req.params;
       const updates = req.body;
-      
-      const user = await UserModel.findById(id);
+
+      // Kiểm tra user tồn tại
+      const user = await userRepository.findOneBy({ id });
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ 
+          success: false,
+          message: 'User not found' 
+        });
       }
 
-      // If updating role, check if role exists
-      if (updates.roleId) {
-        const roleRepository = AppDataSource.getRepository(Role);
-        const role = await roleRepository.findOneBy({ id: updates.roleId });
-        if (!role) {
-          return res.status(400).json({ message: 'Invalid role' });
-        }
+      // Nếu có cập nhật password
+      if (updates.password) {
+        updates.password = await bcrypt.hash(updates.password, 10);
       }
 
-      const updatedUser = await UserModel.update(id, updates);
-      if (updatedUser) {
-        // Remove password from response
-        const { password: _, ...userResponse } = updatedUser;
-        res.json(userResponse);
-      } else {
-        res.status(500).json({ message: 'Failed to update user' });
-      }
+      // Cập nhật user
+      await userRepository.update(id, updates);
+
+      res.json({
+        success: true,
+        message: 'User updated successfully'
+      });
     } catch (error) {
-      console.error('Error updating user:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('Update user error:', error);
+      res.status(400).json({
+        success: false,
+        message: 'Failed to update user'
+      });
     }
   }
 
   async deleteUser(req: Request, res: Response) {
     try {
-      const { id: targetUserId } = req.params;
-      const currentUserId = req.user?.id;
+      const userRepository = AppDataSource.getRepository(User);
+      const { id } = req.params;
 
-      if (!currentUserId) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-      
-      // Check if user exists
-      const targetUser = await UserModel.findById(targetUserId);
-      if (!targetUser) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      // Cannot delete your own account
-      if (targetUserId === currentUserId) {
-        return res.status(403).json({ message: 'Cannot delete your own account' });
+      // Kiểm tra user tồn tại
+      const user = await userRepository.findOneBy({ id });
+      if (!user) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'User not found' 
+        });
       }
 
-      // Get current user with role
-      const currentUser = await UserModel.findById(currentUserId);
-      if (!currentUser || !currentUser.role) {
-        return res.status(403).json({ message: 'Permission denied' });
-      }
+      // Xóa user
+      await userRepository.delete(id);
 
-      // Only admin can delete admin users
-      if (targetUser.role?.name === ADMIN_ROLE_NAME && currentUser.role.name !== ADMIN_ROLE_NAME) {
-        return res.status(403).json({ message: 'Cannot delete admin user' });
-      }
-
-      await UserModel.delete(targetUserId);
-      res.status(204).send();
+      res.json({
+        success: true,
+        message: 'User deleted successfully'
+      });
     } catch (error) {
-      console.error('Error deleting user:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('Delete user error:', error);
+      res.status(400).json({
+        success: false,
+        message: 'Failed to delete user'
+      });
+    }
+  }
+
+  async verifyPassword(req: Request, res: Response) {
+    try {
+      const { encryptedPassword, secretKey } = req.body;
+      const decryptedPassword = this.decryptPassword(encryptedPassword, secretKey);
+      
+      res.json({
+        success: true,
+        password: decryptedPassword
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid decryption key'
+      });
     }
   }
 }

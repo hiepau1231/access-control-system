@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Input, message } from 'antd';
-import CryptoJS from 'crypto-js';
+import { Modal, Input, Form, message } from 'antd';
 
 interface PasswordViewModalProps {
   visible: boolean;
@@ -8,34 +7,41 @@ interface PasswordViewModalProps {
   encryptedPassword: string;
 }
 
-export const PasswordViewModal: React.FC<PasswordViewModalProps> = ({
-  visible,
-  onClose,
-  encryptedPassword,
-}) => {
-  const [key, setKey] = useState('');
-  const [decryptedPassword, setDecryptedPassword] = useState('');
+const PasswordViewModal = ({ visible, onClose, encryptedPassword }: PasswordViewModalProps) => {
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [decryptedPassword, setDecryptedPassword] = useState<string | null>(null);
 
-  const handleDecrypt = () => {
+  const onFinish = async (values: { secretKey: string }) => {
     try {
-      // Split IV and encrypted password
-      const [iv, encrypted] = encryptedPassword.split(':');
-      
-      // Attempt decryption (this will always "work" but may produce incorrect results)
-      const decrypted = CryptoJS.AES.decrypt(
-        encrypted,
-        key
-      ).toString(CryptoJS.enc.Utf8);
+      setLoading(true);
+      const response = await fetch('/api/users/verify-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          encryptedPassword,
+          secretKey: values.secretKey,
+        }),
+      });
 
-      setDecryptedPassword(decrypted || 'Decryption failed - Invalid key');
+      const data = await response.json();
+      if (data.success) {
+        setDecryptedPassword(data.password);
+      } else {
+        message.error('Invalid decryption key');
+      }
     } catch (error) {
-      setDecryptedPassword('Decryption failed - Invalid key');
+      message.error('Failed to decrypt password');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setKey('');
-    setDecryptedPassword('');
+    form.resetFields();
+    setDecryptedPassword(null);
     onClose();
   };
 
@@ -43,29 +49,36 @@ export const PasswordViewModal: React.FC<PasswordViewModalProps> = ({
     <Modal
       title="View Password"
       open={visible}
-      onOk={handleDecrypt}
       onCancel={handleClose}
-      okText="Decrypt"
-      cancelText="Cancel"
+      footer={null}
     >
-      <div>
-        <label>Enter Decryption Key:</label>
-        <Input.Password
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          placeholder="Enter key..."
-        />
-      </div>
-      
+      <Form form={form} onFinish={onFinish}>
+        <Form.Item
+          name="secretKey"
+          rules={[{ required: true, message: 'Please input decryption key!' }]}
+        >
+          <Input.Password placeholder="Enter decryption key" />
+        </Form.Item>
+
+        <Form.Item>
+          <button 
+            type="submit"
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+            disabled={loading}
+          >
+            {loading ? 'Decrypting...' : 'Decrypt'}
+          </button>
+        </Form.Item>
+      </Form>
+
       {decryptedPassword && (
         <div className="mt-4">
-          <label>Decrypted Password:</label>
-          <Input.Password
-            value={decryptedPassword}
-            readOnly
-          />
+          <p className="font-bold">Decrypted Password:</p>
+          <p className="font-mono bg-gray-100 p-2 rounded">{decryptedPassword}</p>
         </div>
       )}
     </Modal>
   );
-}; 
+};
+
+export default PasswordViewModal; 
